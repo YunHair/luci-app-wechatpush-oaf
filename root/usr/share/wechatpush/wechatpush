@@ -47,7 +47,7 @@ read_config() {
 		"jsonpath" "sckey" "sc3key" "sc3uid" "sc3tags" "corpid" "userid" "agentid" "corpsecret" "mediapath" "wxpusher_apptoken" "wxpusher_uids" "wxpusher_topicIds" "pushplus_token" "wpush_apikey" "tg_api_server" "tg_token" "tg_chat_id" "tg_thread_id" "recipient_email" "smtp_host" "smtp_port" "smtp_tls" "smtp_starttls" "smtp_user" "smtp_passwordeval" "smtp_from" "smtp_from_full_name" \
 		"get_ipv4_mode" "ipv4_interface" "get_ipv6_mode" "ipv6_interface" \
 		"device_notification" "cpu_notification" "cpu_load_threshold" "temperature_threshold" \
-		"client_usage" "client_usage_max" "client_usage_disturb" "client_usage_whitelist" "traffic_source" \
+		"client_usage" "client_usage_max" "client_usage_disturb" "client_usage_whitelist" "traffic_source" "traffic_accumulate" \
 		"login_notification" "login_max_num" "login_web_black" "login_ip_black_timeout" "block_blacklisted_forwarding" "login_ip_white_list" "port_knocking_enable" "login_ip_white_timeout" "login_port_white" "login_port_forward_list" \
 		"crontab_regular_time" "crontab_interval_time" \
 		"do_not_disturb_mode" "do_not_disturb_starttime" "do_not_disturb_endtime" "up_down_push_whitelist" "up_down_push_blacklist" "up_down_push_interface" "mac_online_list" "mac_offline_list" "cpu_threshold_duration" "cpu_notification_delay" "login_disturb" "login_notification_delay" "login_log_enable" \
@@ -96,6 +96,13 @@ read_config() {
 			traffic_backend="wrtbwmon"
 			;;
 	esac
+
+	# ===== 跨天累计总流量（仅 OAF 后端有意义；wrtbwmon 自身即为累计值） =====
+	# traffic_accumulate=1 且使用 OAF 时启用：wechatpush 维护累计基线，抵消 OAF 每日零点归零。
+	traffic_accumulate_enabled="0"
+	if [ "$traffic_backend" = "oaf" ] && [ "$traffic_accumulate" = "1" ]; then
+		traffic_accumulate_enabled="1"
+	fi
 
 	if [ -x "/usr/bin/apk" ]; then
 		for str_version in "wrtbwmon" "iputils-arping" "curl" "iw"; do
@@ -1109,23 +1116,61 @@ usage_oaf_update() {
 	[ -z "$ubus_resp" ] && return 1
 	echo "$ubus_resp" | grep -q '"code"[[:space:]]*:[[:space:]]*2000' || return 1
 
+	local raw="${dir}/usage.db.raw.$$"
 	local tmp="${dir}/usage.db.oaf.$$"
+	# raw 格式(无表头): mac,in,out,total  —— in=下载(df), out=上传(uf), total=df+uf
+	if echo "$ubus_resp" | grep -q '"data"[[:space:]]*:[[:space:]]*{'; then
+		echo "$ubus_resp" | jq -r '.data.l[]? | [(.m // ""), (.df // 0), (.uf // 0), ((.df // 0)+(.uf // 0))] | @tsv' 2>/dev/null | \
+		awk -F'\t' 'NF>=4 && $1!="" { printf "%s,%s,%s,%s\n", $1, $2, $3, $4 }' > "$raw"
+	fi
+	# 若 get_user_stat 返回空（老版本 OAF 无此接口），尝试 get_daily_top_users 兜底
+	if [ ! -s "$raw" ]; then
+		ubus_resp=$(ubus call fwx common '{"api":"get_daily_top_users","data":{}}' 2>/dev/null) || { rm -f "$raw" "$tmp"; return 1; }
+		echo "$ubus_resp" | jq -r '.data.users[]? | [(.mac // ""), (.down_bytes // 0), (.up_bytes // 0), (.total_bytes // 0)] | @tsv' 2>/dev/null | \
+		awk -F'\t' 'NF>=4 && $1!="" { printf "%s,%s,%s,%s\n", $1, $2, $3, $4 }' > "$raw"
+	fi
+	[ -s "$raw" ] || { rm -f "$raw" "$tmp"; return 1; }
+
 	# 表头：第4列 in、第5列 out、第6列 total（与 wrtbwmon 默认列号一致）
 	echo 'no,ip,mac,in,out,total,used' > "$tmp"
-	# 列序: ip="", mac=.m, in=.df(下载), out=.uf(上传), total=df+uf
-	# 若固件 OAF 版本没有 get_user_stat，回退到 get_daily_top_users（有 8 台限制但好过没有）
-	if ! echo "$ubus_resp" | grep -q '"data"[[:space:]]*:[[:space:]]*{'; then
-		rm -f "$tmp"
-		return 1
+	if [ "$traffic_accumulate_enabled" = "1" ]; then
+		# ===== 跨天累计：维护基线，抵消 OAF 每日归零 =====
+		# 基线文件每行: mac,base_in,base_out,base_total,last_in,last_out,last_total
+		# 首行表头确保 awk 的 FNR==NR 正确区分两个输入文件
+		local accum_db="/usr/share/wechatpush/usage_accum.db"
+		[ -s "$accum_db" ] || echo 'mac,bi,bo,bt,li,lo,lt' > "$accum_db"
+		awk -F',' -v out="$tmp" -v acc="$accum_db" '
+			FNR==NR {
+				if ($1=="mac" || $0 ~ /^#/) next
+				k=tolower($1)
+				bi[k]=$2+0; bo[k]=$3+0; bt[k]=$4+0
+				li[k]=$5+0; lo[k]=$6+0; lt[k]=$7+0
+				next
+			}
+			{
+				k=tolower($1)
+				cin=$2+0; cout=$3+0; ctot=$4+0
+				# 当天值 < 上次快照 => 发生了归零(OAF 零点重置 / 固件重启)，把上次快照并入基线
+				if (lt[k] && ctot < lt[k]) {
+					bi[k]+=li[k]; bo[k]+=lo[k]; bt[k]+=lt[k]
+				}
+				li[k]=cin; lo[k]=cout; lt[k]=ctot
+				seen[k]=1
+				printf "%d,%s,%s,%s,%s,%s,0\n", ++n, "0", $1, bi[k]+cin, bo[k]+cout, bt[k]+ctot >> out
+			}
+			END {
+				for (k in lt) {
+					if (k=="") continue
+					# 本次未出现的设备保留其基线，快照不清零；本次出现的已更新，写回即可
+					printf "%s,%d,%d,%d,%d,%d,%d\n", k, bi[k], bo[k], bt[k], li[k], lo[k], lt[k] > acc
+				}
+			}
+		' "$accum_db" "$raw"
+	else
+		# 不累加：直接输出当天值
+		awk -F',' -v out="$tmp" '{ printf "%d,%s,%s,%s,%s,%s,0\n", NR, "0", $1, $2, $3, $4 >> out }' "$raw"
 	fi
-	echo "$ubus_resp" | jq -r '.data.l[]? | [("0"), (.m // ""), (.df // 0), (.uf // 0), ((.df // 0)+(.uf // 0))] | @tsv' 2>/dev/null | \
-	awk -F'\t' 'NF>=5 && $2!="" { printf "%d,%s,%s,%s,%s,%s,0\n", NR, $1, $2, $3, $4, $5 }' >> "$tmp"
-	# 若 get_user_stat 返回空（老版本 OAF 无此接口），尝试 get_daily_top_users 兜底
-	if [ "$(wc -l < "$tmp")" -le 1 ]; then
-		ubus_resp=$(ubus call fwx common '{"api":"get_daily_top_users","data":{}}' 2>/dev/null) || { rm -f "$tmp"; return 1; }
-		echo "$ubus_resp" | jq -r '.data.users[]? | [(.ip // ""), (.mac // ""), (.down_bytes // 0), (.up_bytes // 0), (.total_bytes // 0)] | @tsv' 2>/dev/null | \
-		awk -F'\t' 'NF>=5 && $2!="" { printf "%d,%s,%s,%s,%s,%s,0\n", NR, $1, $2, $3, $4, $5 }' >> "$tmp"
-	fi
+	rm -f "$raw"
 	[ -s "$tmp" ] || { rm -f "$tmp"; return 1; }
 	mv -f "$tmp" "${dir}/usage.db" 2>/dev/null || { rm -f "$tmp"; return 1; }
 	return 0

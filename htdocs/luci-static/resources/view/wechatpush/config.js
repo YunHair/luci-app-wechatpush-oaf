@@ -392,6 +392,12 @@ return view.extend({
 		o.default = 'wrtbwmon';
 		o.description = _('Choose where per-client traffic statistics come from. Use OAF on firewall4/nftables systems to avoid legacy iptables rules; requires luci-app-oaf installed. The OAF source reports daily traffic that resets at midnight.');
 
+		o = s.taboption('basic', form.Flag, 'traffic_accumulate', _('Accumulate Total Traffic Across Days (OAF only)'));
+		o.default = '0';
+		o.depends('traffic_source', 'oaf');
+		o.depends('traffic_source', 'auto');
+		o.description = _('When using OAF, let wechatpush keep a running total across days by detecting the midnight reset and adding each completed day to a baseline. Wrtbwmon already accumulates by itself, so this has no effect there. Turn OFF "Reset Traffic Data Every Day at Midnight" when enabling this.');
+
 		o = s.taboption('basic', form.Flag, 'reset_regularly', _('Reset Traffic Data Every Day at Midnight'));
 
 		o = s.taboption('basic', form.Flag, 'prefer_client_page', _('Prefer displaying online devices'));

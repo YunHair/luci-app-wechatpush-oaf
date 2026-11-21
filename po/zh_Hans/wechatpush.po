@@ -400,6 +400,14 @@ msgstr "自动（优先 wrtbwmon，其次 OAF）"
 msgid "Choose where per-client traffic statistics come from. Use OAF on firewall4/nftables systems to avoid legacy iptables rules; requires luci-app-oaf installed. The OAF source reports daily traffic that resets at midnight."
 msgstr "选择每台客户端流量统计的数据来源。在 firewall4/nftables 系统上请选用 OAF，以避免产生旧版 iptables 规则；需已安装 luci-app-oaf。OAF 数据源统计当天流量，每天零点自动归零。"
 
+#: traffic accumulate option (OAF support)
+msgid "Accumulate Total Traffic Across Days (OAF only)"
+msgstr "跨天累计总流量（仅 OAF 有效）"
+
+#: traffic accumulate option (OAF support)
+msgid "When using OAF, let wechatpush keep a running total across days by detecting the midnight reset and adding each completed day to a baseline. Wrtbwmon already accumulates by itself, so this has no effect there. Turn OFF \"Reset Traffic Data Every Day at Midnight\" when enabling this."
+msgstr "使用 OAF 时，让 wechatpush 自动检测零点归零、把每天流量累加到基线，从而得到跨天累计总流量。wrtbwmon 自身已累计，此选项对其无效。开启本项时请关闭“每天零点重置流量数据”。"
+
 #: applications/luci-app-wechatpush/htdocs/luci-static/resources/view/wechatpush/config.js:287
 msgid "Enable Logging"
 msgstr "开启日志"
