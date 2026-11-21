@@ -1095,23 +1095,37 @@ soc_temp() {
 
 # 流量数据
 # 从 OAF (OpenAppFilter) 读取每客户端流量，生成与 wrtbwmon usage.db 兼容的 CSV。
-# 数据源：ubus call fwx common {"api":"get_daily_top_users"}
-# 返回字段：mac / ip / down_bytes / up_bytes / total_bytes（当天累计，OAF 每日零点自动归零）
+# 数据源：ubus call fwx common {"api":"get_user_stat"}
+#   - get_user_stat 遍历 client_list 返回【全部设备】，字段 m(mac)/uf(上传)/df(下载)/at(在线时长)。
+#   - 不用 get_daily_top_users：那个接口只返回流量最高的 8 台，设备多于 8 台会漏。
+#   - 口径为当天累计，OAF 每日零点自动归零（按 MAC 的历史明细 OAF 未通过 ubus 暴露）。
+# 该接口不含 ip，CSV 的 ip 列留空；wechatpush 按 MAC 匹配，不影响解析。
 # 生成表头含 in/out/total 字段，列序对齐 wechatpush 默认 total_n=6，向后兼容解析逻辑。
 usage_oaf_update() {
 	command -v ubus >/dev/null 2>&1 || return 1
 	command -v jq >/dev/null 2>&1 || return 1
 	local ubus_resp
-	ubus_resp=$(ubus call fwx common '{"api":"get_daily_top_users","data":{}}' 2>/dev/null) || return 1
+	ubus_resp=$(ubus call fwx common '{"api":"get_user_stat","data":{}}' 2>/dev/null) || return 1
 	[ -z "$ubus_resp" ] && return 1
 	echo "$ubus_resp" | grep -q '"code"[[:space:]]*:[[:space:]]*2000' || return 1
 
 	local tmp="${dir}/usage.db.oaf.$$"
 	# 表头：第4列 in、第5列 out、第6列 total（与 wrtbwmon 默认列号一致）
 	echo 'no,ip,mac,in,out,total,used' > "$tmp"
-	# in=down_bytes(下载), out=up_bytes(上传), total=total_bytes
-	echo "$ubus_resp" | jq -r '.data.users[]? | [(.ip // ""), (.mac // ""), (.down_bytes // 0), (.up_bytes // 0), (.total_bytes // 0)] | @tsv' 2>/dev/null | \
-	awk -F'\t' 'NF>=5 { printf "%d,%s,%s,%s,%s,%s,0\n", NR, $1, $2, $3, $4, $5 }' >> "$tmp"
+	# 列序: ip="", mac=.m, in=.df(下载), out=.uf(上传), total=df+uf
+	# 若固件 OAF 版本没有 get_user_stat，回退到 get_daily_top_users（有 8 台限制但好过没有）
+	if ! echo "$ubus_resp" | grep -q '"data"[[:space:]]*:[[:space:]]*{'; then
+		rm -f "$tmp"
+		return 1
+	fi
+	echo "$ubus_resp" | jq -r '.data.l[]? | [("0"), (.m // ""), (.df // 0), (.uf // 0), ((.df // 0)+(.uf // 0))] | @tsv' 2>/dev/null | \
+	awk -F'\t' 'NF>=5 && $2!="" { printf "%d,%s,%s,%s,%s,%s,0\n", NR, $1, $2, $3, $4, $5 }' >> "$tmp"
+	# 若 get_user_stat 返回空（老版本 OAF 无此接口），尝试 get_daily_top_users 兜底
+	if [ "$(wc -l < "$tmp")" -le 1 ]; then
+		ubus_resp=$(ubus call fwx common '{"api":"get_daily_top_users","data":{}}' 2>/dev/null) || { rm -f "$tmp"; return 1; }
+		echo "$ubus_resp" | jq -r '.data.users[]? | [(.ip // ""), (.mac // ""), (.down_bytes // 0), (.up_bytes // 0), (.total_bytes // 0)] | @tsv' 2>/dev/null | \
+		awk -F'\t' 'NF>=5 && $2!="" { printf "%d,%s,%s,%s,%s,%s,0\n", NR, $1, $2, $3, $4, $5 }' >> "$tmp"
+	fi
 	[ -s "$tmp" ] || { rm -f "$tmp"; return 1; }
 	mv -f "$tmp" "${dir}/usage.db" 2>/dev/null || { rm -f "$tmp"; return 1; }
 	return 0

@@ -63,7 +63,9 @@ v2.06.2 之后的版本不再支持 LuCI 18.06，如需编译，请使用 openwr
 本分支支持两种流量数据来源，可在「基本设置 → 流量数据来源」中选择：
 
 1. **wrtbwmon（默认）**：原版行为，依赖 wrtbwmon，通过 iptables 建链计数。**该插件与 Routing/NAT、Flow Offloading、代理上网等插件冲突，且会在 firewall4/nftables 系统中产生「旧版 iptables 规则」警告。**
-2. **OAF / OpenAppFilter（推荐用于 nftables 系统）**：通过 `ubus call fwx common` 从 OAF 读取每台设备的 `up_bytes/down_bytes/total_bytes`，**不创建任何 iptables 规则，可与 firewall4/nftables 及 Flow Offloading 共存**。需已安装并启用 `luci-app-oaf` / `open-app-filter`（OAF 的流量统计需开启）。OAF 统计的是**当天流量，每天零点自动归零**。
+2. **OAF / OpenAppFilter（推荐用于 nftables 系统）**：通过 `ubus call fwx common` 的 `get_user_stat` 读取**全部设备**的 `m`(MAC)/`uf`(上传)/`df`(下载)，**不创建任何 iptables 规则，可与 firewall4/nftables 及 Flow Offloading 共存**。需已安装并启用 `luci-app-oaf` / `open-app-filter`（OAF 的流量统计需开启）。
+
+   **口径说明（重要）**：OAF 的按设备流量是**当天累计、每天零点自动归零**，与本插件「每天零点重置」选项吻合。OAF 界面那个「近 30 天」图表是**所有设备合计的全局流量**（`get_history_traffic_stats`），不区分单台设备；而按设备的历史明细 OAF 虽有存盘但未通过 ubus 暴露，因此**无法推送单台设备的跨天/累计流量**。字段若旧版 OAF 无 `get_user_stat`，会自动回退到 `get_daily_top_users`（该接口只返回流量最高的 8 台）。
 3. **自动**：优先使用 wrtbwmon，未安装时回退到 OAF。
 
 选择 OAF 时，编译期无需勾选 `Enable Traffic Monitoring (wrtbwmon)`，避免把 wrtbwmon 编进固件。运行时插件会自动检测 ubus 上的 `fwx` 对象判断 OAF 是否可用。
