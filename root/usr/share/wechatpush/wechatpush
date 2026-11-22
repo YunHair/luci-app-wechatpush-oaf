@@ -79,8 +79,11 @@ read_config() {
 	fi
 	case "$traffic_source" in
 		oaf)
-			# 强制使用 OAF；若不可用则回退到 wrtbwmon，避免流量功能彻底失效
-			[ "$oaf_available" -eq 1 ] && traffic_backend="oaf" || traffic_backend="wrtbwmon"
+			# 显式指定 OAF：不做启动期降级。
+			# 启动顺序（fwx 尚未注册 ubus 对象）会让探测误判，若此时降级到 wrtbwmon
+			# 就会永久卡在错误后端；这里固定为 oaf，由 usage_oaf_update 每次自行重试。
+			traffic_backend="oaf"
+			[ "$oaf_available" -eq 1 ] || oaf_startup_missing="1"
 			;;
 		auto)
 			# 优先 wrtbwmon（原始行为），无 wrtbwmon 时用 OAF
@@ -89,7 +92,9 @@ read_config() {
 			elif [ "$oaf_available" -eq 1 ]; then
 				traffic_backend="oaf"
 			else
-				traffic_backend="wrtbwmon"
+				# 没装 wrtbwmon：只能等 OAF，不能降级到不存在的后端（否则流量恒为 0）
+				traffic_backend="oaf"
+				oaf_startup_missing="1"
 			fi
 			;;
 		*)
@@ -211,6 +216,9 @@ init() {
 	# 流量数据源健康检查：按实际后端提示，避免 OAF 模式误报 wrtbwmon 缺失
 	if [ "$traffic_backend" = "oaf" ]; then
 		log_change "[INFO] Traffic source: OAF (ubus fwx)"
+		[ "$oaf_startup_missing" = "1" ] && log_change "[WARN] OAF (ubus fwx) not ready yet, traffic update will retry every cycle"
+	elif [ "$traffic_source" = "auto" ] && [ "$oaf_available" = "1" ]; then
+		log_change "[INFO] Traffic source: auto -> OAF (ubus fwx)"
 	else
 		[ ! -f "/usr/sbin/wrtbwmon" ] && log_change "[WARN] $(translate "wrtbwmon not installed, traffic statistics unavailable") (traffic source: wrtbwmon)"
 	fi
@@ -1155,14 +1163,15 @@ usage_oaf_update() {
 					bi[k]+=li[k]; bo[k]+=lo[k]; bt[k]+=lt[k]
 				}
 				li[k]=cin; lo[k]=cout; lt[k]=ctot
-				seen[k]=1
 				printf "%d,%s,%s,%s,%s,%s,0\n", ++n, "0", $1, bi[k]+cin, bo[k]+cout, bt[k]+ctot >> out
 			}
 			END {
 				for (k in lt) {
 					if (k=="") continue
 					# 本次未出现的设备保留其基线，快照不清零；本次出现的已更新，写回即可
-					printf "%s,%d,%d,%d,%d,%d,%d\n", k, bi[k], bo[k], bt[k], li[k], lo[k], lt[k] > acc
+					# 注意：必须用 %.0f 而不是 %d —— busybox awk 的 %d 会按 32 位截断，
+					# 任何超过 2^31(2GiB) 的流量都会写成 -2147483648，导致累计基线永久损坏。
+					printf "%s,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f\n", k, bi[k], bo[k], bt[k], li[k], lo[k], lt[k] > acc
 				}
 			}
 		' "$accum_db" "$raw"
@@ -1171,7 +1180,9 @@ usage_oaf_update() {
 		awk -F',' -v out="$tmp" '{ printf "%d,%s,%s,%s,%s,%s,0\n", NR, "0", $1, $2, $3, $4 >> out }' "$raw"
 	fi
 	rm -f "$raw"
-	[ -s "$tmp" ] || { rm -f "$tmp"; return 1; }
+	# 至少要有一行数据（表头不算），否则保留原有 usage.db，避免用空表覆盖好数据
+	_oaf_tmp_lines=$(grep -c "" "$tmp" 2>/dev/null || true)
+	[ "${_oaf_tmp_lines:-0}" -gt 1 ] || { rm -f "$tmp"; return 1; }
 	mv -f "$tmp" "${dir}/usage.db" 2>/dev/null || { rm -f "$tmp"; return 1; }
 	return 0
 }
@@ -1183,7 +1194,10 @@ usage() {
 		# OAF 后端：从 ubus 拉取 OAF 流量数据
 		if [ "$traffic_backend" = "oaf" ]; then
 			usage_oaf_update && return
-			# OAF 暂不可用时，若装有 wrtbwmon 则回退，否则放弃本次更新
+			# 只有 auto 模式才允许回退到 wrtbwmon：
+			# 显式选择 oaf 时若临时回退，两种数据源口径不同，usage.db 会在两套数字之间跳变，
+			# 会误触发“设备异常流量”推送，因此这里直接放弃本次更新、保留上一份数据。
+			[ "$traffic_source" = "auto" ] || return
 			[ ! -f "/usr/sbin/wrtbwmon" ] && return
 		fi
 		[ ! -f "/usr/sbin/wrtbwmon" ] && return

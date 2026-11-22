@@ -62,21 +62,24 @@ v2.06.2 之后的版本不再支持 LuCI 18.06，如需编译，请使用 openwr
 
 本分支支持两种流量数据来源，可在「基本设置 → 流量数据来源」中选择：
 
-1. **wrtbwmon（默认）**：原版行为，依赖 wrtbwmon，通过 iptables 建链计数。**该插件与 Routing/NAT、Flow Offloading、代理上网等插件冲突，且会在 firewall4/nftables 系统中产生「旧版 iptables 规则」警告。**
-2. **OAF / OpenAppFilter（推荐用于 nftables 系统）**：通过 `ubus call fwx common` 的 `get_user_stat` 读取**全部设备**的 `m`(MAC)/`uf`(上传)/`df`(下载)，**不创建任何 iptables 规则，可与 firewall4/nftables 及 Flow Offloading 共存**。需已安装并启用 `luci-app-oaf` / `open-app-filter`（OAF 的流量统计需开启）。
+1. **wrtbwmon**：原版行为，依赖 wrtbwmon，通过 iptables 建链计数。**该插件与 Routing/NAT、Flow Offloading、代理上网等插件冲突，且会在 firewall4/nftables 系统中产生「旧版 iptables 规则」警告。**
+2. **OAF / OpenAppFilter（推荐用于 nftables 系统）**：通过 `ubus call fwx common` 的 `get_user_stat` 读取**全部设备**的 `m`(MAC)/`uf`(上传)/`df`(下载)，**不创建任何 iptables 规则，可与 firewall4/nftables 共存**。需已安装并启用 `luci-app-oaf` / `open-app-filter`（OAF 的流量统计需开启）。
 
-   **口径说明（重要）**：OAF 的按设备流量是**当天累计、每天零点自动归零**，与本插件「每天零点重置」选项吻合。OAF 界面那个「近 30 天」图表是**所有设备合计的全局流量**（`get_history_traffic_stats`），不区分单台设备；而按设备的历史明细 OAF 虽有存盘但未通过 ubus 暴露，因此**无法推送单台设备的跨天/累计流量**。字段若旧版 OAF 无 `get_user_stat`，会自动回退到 `get_daily_top_users`（该接口只返回流量最高的 8 台）。
-3. **自动**：优先使用 wrtbwmon，未安装时回退到 OAF。
+   **口径说明（重要）**：OAF 的按设备流量是**当天累计、每天零点自动归零**，与本插件「每天零点重置」选项吻合。OAF 界面那个「近 30 天」图表是**所有设备合计的全局流量**（`get_history_traffic_stats`），不区分单台设备；而按设备的历史明细 OAF 虽有存盘但未通过 ubus 暴露（源码里 `load_history_stat_from_file()` 是空实现），因此**无法直接推送单台设备的跨天流量**——需要开启下面的「跨天累计」。旧版 OAF 若无 `get_user_stat`，会自动回退到 `get_daily_top_users`（该接口只返回流量最高的 8 台）。
 
-选择 OAF 时，编译期无需勾选 `Enable Traffic Monitoring (wrtbwmon)`，避免把 wrtbwmon 编进固件。运行时插件会自动检测 ubus 上的 `fwx` 对象判断 OAF 是否可用。
+   **精度前提（必读）**：OAF 的计数钩子挂在 netfilter 的 `NF_INET_FORWARD` 上，**一旦开启软件/硬件流量卸载（flow offloading、HNAT、ECM、PPE 等），被卸载的连接会绕过该钩子，单设备流量会显著少计甚至只统计到每条连接的前几个包**。若发现 OAF 的数字远小于实际，请用 `nft list flowtable inet fw4`、`/proc/net/dev` 对比核对；OAF 自带 `fwx.advanced.disable_hnat=1` 可关闭部分平台的卸载（代价是吞吐/CPU）。
+3. **自动**：已安装 wrtbwmon 时用 wrtbwmon，否则用 OAF（新装默认值）。
+
+选择 OAF 时，编译期无需勾选 `Enable Traffic Monitoring (wrtbwmon)`，避免把 wrtbwmon 编进固件。运行时插件会自动检测 ubus 上的 `fwx` 对象判断 OAF 是否可用；显式选择 OAF 时即使开机瞬间 `fwx` 还没注册，也会在之后每个周期自动重试，不会退回 wrtbwmon。
 
 **跨天累计总流量（OAF 专用）**：选 OAF 时默认显示当天流量（零点归零）。若希望像 wrtbwmon 那样显示**累计总流量**，勾选「跨天累计总流量」选项：wechatpush 会自行维护一个累计基线（存于 `/usr/share/wechatpush/usage_accum.db`，重启不丢），每次刷新检测到当天值比上次小（即零点归零或 OAF 重启）时，把上一天的流量并入基线，展示值 = 基线 + 当天值。精度取决于刷新间隔（默认 60 秒）。注意：
 
 - 开启累计后请**关闭**「每天零点重置流量数据」，否则零点会删除显示用的 `usage.db`（不影响基线，但会造成显示瞬断）。
 - wrtbwmon 自身即累计，此选项对其无效果。
 - 想重新从零累计，停止服务后删除 `/usr/share/wechatpush/usage_accum.db` 即可。
+- 基线文件每个刷新周期都会写一次（默认每天 1440 次），介意闪存写入的设备可把 `sleeptime` 调大。
 
-> 说明：OAF 数据源通过标准 ubus 接口只读获取流量数据，不修改 OAF 本身；若 OAF 某次调用失败，会回退到 wrtbwmon（若已安装）或本次跳过更新，不影响其它推送功能。
+> 说明：OAF 数据源通过标准 ubus 接口只读获取流量数据，不修改 OAF 本身；若 OAF 某次调用失败，本次跳过更新并**保留上一份 `usage.db`**，不会清空数据。只有 `traffic_source=auto` 时才允许回退到 wrtbwmon——显式选 OAF 时不会混用两种口径（否则两套累计值来回跳变会误触发「设备异常流量」推送）。
 
 **关于硬盘信息：**
 

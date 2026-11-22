@@ -1,8 +1,10 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-wechatpush
-PKG_VERSION:=3.6.13-oaf1
-PKG_RELEASE:=
+# 注意：apk (OpenWrt 25.12+) 要求 VERSION 中只能有一个 "-"（由 PKG_RELEASE 生成 -rN），
+# 因此这里用 "~" 作为预发布分隔符，opkg/apk 均合法。
+PKG_VERSION:=3.6.13~oaf2
+PKG_RELEASE:=1
 
 PKG_MAINTAINER:=tty228 <tty228@yeah.net>
 PKG_CONFIG_DEPENDS:= \
@@ -34,9 +36,11 @@ config PACKAGE_$(PKG_NAME)_Enable_OAF_Traffic
         bool "Enable OAF traffic source support"
         help
                 Pull per-client traffic from OAF (OpenAppFilter) via ubus instead of wrtbwmon.
-                Requires luci-app-oaf / open-app-filter (fwx) installed. Works with firewall4/nftables
-                and does NOT create legacy iptables rules. Select "oaf" or "auto" as traffic source
-                in the plugin settings. This option only adds a runtime dependency hint.
+                Requires appfilter/luci-app-oaf (ubus object "fwx") to be installed and running.
+                Works with firewall4/nftables and does NOT create legacy iptables rules.
+                Select "oaf" or "auto" as traffic source in the plugin settings.
+                NOTE: this is a build-time marker only; it does not pull in luci-app-oaf
+                automatically (that package lives in the oaf feed and may not exist in all trees).
         depends on PACKAGE_$(PKG_NAME)
         default n
 config PACKAGE_$(PKG_NAME)_Local_Disk_Information_Detection

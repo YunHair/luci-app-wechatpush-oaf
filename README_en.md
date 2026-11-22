@@ -62,11 +62,13 @@ By default, ping/arping is used to actively detect device online status to count
 
 This branch supports two traffic data sources, selectable under "Basic Settings → Traffic Data Source":
 
-1. **wrtbwmon (default)**: original behavior, relies on wrtbwmon and counts via iptables. **Conflicts with Routing/NAT, Flow Offloading and proxy plugins, and produces "legacy iptables rules" warnings on firewall4/nftables systems.**
-2. **OAF / OpenAppFilter (recommended for nftables)**: reads per-client `up_bytes/down_bytes/total_bytes` from OAF via `ubus call fwx common`. **Creates no iptables rules and coexists with firewall4/nftables and Flow Offloading.** Requires `luci-app-oaf` / `open-app-filter` installed and traffic stats enabled. OAF reports **daily traffic that resets at midnight**.
-3. **Auto**: prefers wrtbwmon, falls back to OAF when wrtbwmon is absent.
+1. **wrtbwmon**: original behavior, relies on wrtbwmon and counts via iptables. **Conflicts with Routing/NAT, Flow Offloading and proxy plugins, and produces "legacy iptables rules" warnings on firewall4/nftables systems.**
+2. **OAF / OpenAppFilter (recommended for nftables)**: reads per-client `m` (MAC) / `uf` (upload) / `df` (download) for **all clients** via `ubus call fwx common {"api":"get_user_stat"}`. **Creates no iptables rules and coexists with firewall4/nftables.** Requires `luci-app-oaf` / `open-app-filter` installed and traffic stats enabled. OAF reports **daily traffic that resets at midnight**.
 
-When using OAF you can leave "Enable Traffic Monitoring (wrtbwmon)" off at build time. At runtime the plugin detects the `fwx` ubus object to decide availability. OAF data is read-only via standard ubus; if a call fails it falls back to wrtbwmon (if installed) or skips that update without affecting other push features.
+   **Accuracy caveat (important)**: OAF counts packets in the netfilter `NF_INET_FORWARD` hook. Once software/hardware flow offloading (flowtable, HNAT, ECM, PPE, …) is enabled, offloaded flows bypass that hook and per-client traffic is **significantly undercounted**. Cross-check with `nft list flowtable inet fw4` and `/proc/net/dev`; OAF ships `fwx.advanced.disable_hnat=1` to disable offloading on some platforms (at the cost of throughput/CPU).
+3. **Auto**: uses wrtbwmon when installed, otherwise OAF (new default).
+
+When using OAF you can leave "Enable Traffic Monitoring (wrtbwmon)" off at build time. At runtime the plugin detects the `fwx` ubus object; with an explicit OAF selection it keeps retrying every cycle instead of falling back permanently if `fwx` is not registered yet at boot. OAF data is read-only via standard ubus; if a call fails that update is skipped and the previous `usage.db` is kept (never cleared). Falling back to wrtbwmon only happens with `traffic_source=auto`, because mixing the two accounting models makes totals jump and can raise bogus "abnormal traffic" alerts.
 
 **About Hard Drive Information:**
 

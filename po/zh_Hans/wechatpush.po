@@ -385,8 +385,8 @@ msgid "Traffic Data Source"
 msgstr "流量数据来源"
 
 #: traffic source option (OAF support)
-msgid "wrtbwmon (iptables, default)"
-msgstr "wrtbwmon（iptables，默认）"
+msgid "wrtbwmon (iptables)"
+msgstr "wrtbwmon（iptables 计数）"
 
 #: traffic source option (OAF support)
 msgid "OAF / OpenAppFilter (nftables, via ubus)"

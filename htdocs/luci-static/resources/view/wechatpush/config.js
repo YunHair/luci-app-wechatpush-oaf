@@ -386,10 +386,10 @@ return view.extend({
 		o.depends('oui_data', '2');
 
 		o = s.taboption('basic', form.ListValue, 'traffic_source', _('Traffic Data Source'));
-		o.value('wrtbwmon', _('wrtbwmon (iptables, default)'));
+		o.value('wrtbwmon', _('wrtbwmon (iptables)'));
 		o.value('oaf', _('OAF / OpenAppFilter (nftables, via ubus)'));
 		o.value('auto', _('Auto (prefer wrtbwmon, then OAF)'));
-		o.default = 'wrtbwmon';
+		o.default = 'auto';
 		o.description = _('Choose where per-client traffic statistics come from. Use OAF on firewall4/nftables systems to avoid legacy iptables rules; requires luci-app-oaf installed. The OAF source reports daily traffic that resets at midnight.');
 
 		o = s.taboption('basic', form.Flag, 'traffic_accumulate', _('Accumulate Total Traffic Across Days (OAF only)'));
