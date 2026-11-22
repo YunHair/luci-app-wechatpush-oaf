@@ -185,10 +185,10 @@ jobs:
           if-no-files-found: error
 
   build-ipk:
-    name: Build IPK (v23.05)
+    name: Build IPK (v24.10)
     runs-on: ubuntu-latest
     env:
-      OPENWRT_VERSION: 'v23.05.3'
+      OPENWRT_VERSION: 'v24.10.0'
     strategy:
       fail-fast: false
       matrix:
