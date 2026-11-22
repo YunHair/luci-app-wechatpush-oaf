@@ -1,10 +1,10 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-wechatpush
-# 注意：apk (OpenWrt 25.12+) 要求 VERSION 中只能有一个 "-"（由 PKG_RELEASE 生成 -rN），
-# 因此这里用 "~" 作为预发布分隔符，opkg/apk 均合法。
-PKG_VERSION:=3.6.13~oaf2
-PKG_RELEASE:=1
+# apk (OpenWrt 25.12+) 的版本号只接受 数字[.数字]*[-r数字]，
+# 因此 fork 标识放在 tag 与 release notes 里，包版本用 3.6.13-r2。
+PKG_VERSION:=3.6.13
+PKG_RELEASE:=2
 
 PKG_MAINTAINER:=tty228 <tty228@yeah.net>
 PKG_CONFIG_DEPENDS:= \

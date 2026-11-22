@@ -239,8 +239,10 @@ jobs:
 
           echo "Updating feeds..."
           cd ${{ env.SDK_DIR }}
-          FORCE=1 ./scripts/feeds update -a
-          FORCE=1 ./scripts/feeds install -a
+          mkdir -p staging_dir/host
+          touch staging_dir/host/.prereq-build
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
           cd ..
 
       - name: Prepare build environment
@@ -268,12 +270,16 @@ jobs:
             echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
             echo "CONFIG_LUCI_LANG_zh_Hans=y"
           } > .config
-          FORCE=1 make defconfig
+          mkdir -p staging_dir/host
+          touch staging_dir/host/.prereq-build
+          make defconfig
 
       - name: Compile the package
         working-directory: ${{ env.SDK_DIR }}
         run: |
-          FORCE=1 make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1))
+          mkdir -p staging_dir/host
+          touch staging_dir/host/.prereq-build
+          make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1))
 
       - name: Find and prepare .ipk file
         id: find_ipk
