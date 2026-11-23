@@ -212,7 +212,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.SDK_DIR }}
-          key: ${{ runner.os }}-sdk-ipk-${{ matrix.target.name }}-${{ env.OPENWRT_VERSION }}
+          key: ubuntu-22.04-sdk-ipk-${{ matrix.target.name }}-${{ env.OPENWRT_VERSION }}
 
       - name: Download, extract OpenWrt SDK and update feeds
         if: steps.cache-sdk.outputs.cache-hit != 'true'
