@@ -277,6 +277,19 @@ jobs:
         continue-on-error: true
         working-directory: ${{ env.SDK_DIR }}
         run: |
+          # 1) SDK 的 staging_dir/host/bin 缺少 host 编译器链接，补上
+          mkdir -p staging_dir/host/bin
+          for t in cc gcc g++ c++; do
+            p="$(command -v $t 2>/dev/null)" || continue
+            [ -e "staging_dir/host/bin/$t" ] || ln -sf "$p" "staging_dir/host/bin/$t"
+          done
+          ls -l staging_dir/host/bin/gcc staging_dir/host/bin/g++ 2>/dev/null || true
+
+          # 2) 24.10 的 luci-base/contrib/lemon.c 在 GCC 15 (默认 C23) 下报
+          #    conflicting types for 'void f()'，强制用 gnu17 语义编译
+          export CC="cc -std=gnu17"
+          export HOSTCC="cc -std=gnu17"
+
           set -o pipefail
           make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1)) 2>&1 | tee /tmp/compile.log
 
