@@ -186,7 +186,9 @@ jobs:
 
   build-ipk:
     name: Build IPK (v24.10)
-    runs-on: ubuntu-latest
+    # 用 22.04：GCC 11 默认 -std=gnu17，而 24.10 的 luci-base/contrib/lemon.c
+    # 用 K&R 风格 void f() 声明，在 ubuntu-latest(GCC 15, 默认 C23) 下会编译失败。
+    runs-on: ubuntu-22.04
     env:
       OPENWRT_VERSION: 'v24.10.0'
     strategy:
