@@ -270,8 +270,6 @@ jobs:
             echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
             echo "CONFIG_LUCI_LANG_zh_Hans=y"
           } > .config
-          mkdir -p staging_dir/host
-          touch staging_dir/host/.prereq-build
           make defconfig
 
       - name: Compile the package
@@ -279,8 +277,6 @@ jobs:
         continue-on-error: true
         working-directory: ${{ env.SDK_DIR }}
         run: |
-          mkdir -p staging_dir/host
-          touch staging_dir/host/.prereq-build
           set -o pipefail
           make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1)) 2>&1 | tee /tmp/compile.log
 
