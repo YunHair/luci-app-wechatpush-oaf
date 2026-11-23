@@ -275,11 +275,47 @@ jobs:
           make defconfig
 
       - name: Compile the package
+        id: compile
+        continue-on-error: true
         working-directory: ${{ env.SDK_DIR }}
         run: |
           mkdir -p staging_dir/host
           touch staging_dir/host/.prereq-build
-          make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1))
+          set -o pipefail
+          make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1)) 2>&1 | tee /tmp/compile.log
+
+      - name: Publish diagnostics on failure
+        if: steps.compile.outcome == 'failure'
+        run: |
+          set +e
+          WORK="${{ github.workspace }}"
+          mkdir -p "$WORK/diag"
+          cp /tmp/compile.log "$WORK/diag/compile.log" 2>/dev/null
+          cd "${{ env.SDK_DIR }}"
+          {
+            echo "===== .config 相关项 ====="
+            grep -nE "wechatpush|lua-runtime|LUCI_LANG|CONFIG_TARGET" .config 2>/dev/null
+            echo
+            echo "===== logs 目录文件 ====="
+            find logs -type f 2>/dev/null | head -60
+            echo
+            echo "===== package 目录 ====="
+            ls -la package/${PACKAGE_NAME} 2>/dev/null | head -25
+            echo
+            echo "===== 关键错误行 ====="
+            grep -rnE "error:|Error [0-9]|No rule to make target|does not exist|undefined reference|fatal error|WARNING: Makefile|Command not found|not found" logs 2>/dev/null | head -120
+          } > "$WORK/diag/summary.txt" 2>&1
+          cd "$WORK"
+          git config user.email "ci-diag@local"
+          git config user.name "ci-diag"
+          git checkout -B diag-ipk
+          git add -Af diag
+          git commit -qm "diag: ipk compile failure (run ${{ github.run_number }})" || echo "nothing to commit"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" "HEAD:refs/heads/diag-ipk"
+
+      - name: Fail if compile failed
+        if: steps.compile.outcome == 'failure'
+        run: exit 1
 
       - name: Find and prepare .ipk file
         id: find_ipk
