@@ -277,18 +277,25 @@ jobs:
         continue-on-error: true
         working-directory: ${{ env.SDK_DIR }}
         run: |
-          # 1) SDK 的 staging_dir/host/bin 缺少 host 编译器链接，补上
+          # 1) SDK 的 staging_dir/host/bin 缺少 host 编译器，补上
           mkdir -p staging_dir/host/bin
-          for t in cc gcc g++ c++; do
-            p="$(command -v $t 2>/dev/null)" || continue
-            [ -e "staging_dir/host/bin/$t" ] || ln -sf "$p" "staging_dir/host/bin/$t"
-          done
-          ls -l staging_dir/host/bin/gcc staging_dir/host/bin/g++ 2>/dev/null || true
+          REAL_CC="$(command -v gcc || command -v cc)"
+          REAL_CXX="$(command -v g++ || command -v c++)"
+          echo "REAL_CC=$REAL_CC ($($REAL_CC --version | head -1))"
 
-          # 2) 24.10 的 luci-base/contrib/lemon.c 在 GCC 15 (默认 C23) 下报
-          #    conflicting types for 'void f()'，强制用 gnu17 语义编译
-          export CC="cc -std=gnu17"
-          export HOSTCC="cc -std=gnu17"
+          # 2) runner 的系统 GCC 15 默认 C23，24.10 的 luci-base/contrib/lemon.c
+          #    用 K&R 风格 void f() 声明会报 conflicting types；
+          #    且 lemon 的编译命令硬编码为 `cc`，不读 $(CC)，只能从 PATH 层面拦截。
+          rm -f staging_dir/host/bin/gcc staging_dir/host/bin/g++
+          printf '#!/bin/sh\nexec %s -std=gnu17 "$@"\n' "$REAL_CC"  > staging_dir/host/bin/gcc
+          printf '#!/bin/sh\nexec %s -std=gnu17 "$@"\n' "$REAL_CXX" > staging_dir/host/bin/g++
+          chmod +x staging_dir/host/bin/gcc staging_dir/host/bin/g++
+          mkdir -p /tmp/ccwrap
+          printf '#!/bin/sh\nexec %s -std=gnu17 "$@"\n' "$REAL_CC" > /tmp/ccwrap/cc
+          chmod +x /tmp/ccwrap/cc
+          export PATH="/tmp/ccwrap:$PATH"
+          echo "cc -> $(command -v cc)"; cc --version | head -1
+          staging_dir/host/bin/gcc --version | head -1
 
           set -o pipefail
           make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1)) 2>&1 | tee /tmp/compile.log
