@@ -1,9 +1,9 @@
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=luci-app-wechatpush-oaf
-# OAF 定制分支，包名与 LuCI 应用名统一为 luci-app-wechatpush-oaf。
-# apk (OpenWrt 25.12+) 的版本号只接受 数字[.数字]*[-r数字]，故实际包版本为 1.0-r1。
-PKG_VERSION:=1.0
+PKG_NAME:=luci-app-wechatpush-pro
+# pro 分支：包名与 LuCI 应用名统一为 luci-app-wechatpush-pro。
+# apk (OpenWrt 25.12+) 的版本号只接受 数字[.数字]*[-r数字]，故实际包版本为 1.1-r1。
+PKG_VERSION:=1.1
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=tty228 <tty228@yeah.net>
@@ -13,7 +13,7 @@ PKG_CONFIG_DEPENDS:= \
         CONFIG_PACKAGE_$(PKG_NAME)_Enable_Local_Disk_Information_Detection \
         CONFIG_PACKAGE_$(PKG_NAME)_Enable_Host_Information_Detection
 
-LUCI_TITLE:=LuCI support for WeChat push (OAF)
+LUCI_TITLE:=LuCI support for WeChat push (Pro)
 LUCI_PKGARCH:=all
 LUCI_DEPENDS:=+iputils-arping +curl +jq +bash +luci-lua-runtime \
         +PACKAGE_$(PKG_NAME)_Enable_Traffic_Monitoring:wrtbwmon \
@@ -28,7 +28,7 @@ config PACKAGE_$(PKG_NAME)_Enable_Traffic_Monitoring
         bool "Enable Traffic Monitoring (wrtbwmon)"
         help
                 The traffic statistics feature relies on the wrtbwmon package. This plugin may conflict with Routing/NAT, Flow Offloading, and proxy internet access plugins, potentially leading to an inability to retrieve traffic information.
-                NOTE: If you use OAF (OpenAppFilter) for traffic statistics, leave this OFF and select the OAF traffic source in the plugin settings instead.
+                NOTE: leave this OFF when using the default ctstat source or OAF; select the matching traffic source in the plugin settings instead.
         select PACKAGE_wrtbwmon
         depends on PACKAGE_$(PKG_NAME)
         default n

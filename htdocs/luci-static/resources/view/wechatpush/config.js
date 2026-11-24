@@ -386,17 +386,38 @@ return view.extend({
 		o.depends('oui_data', '2');
 
 		o = s.taboption('basic', form.ListValue, 'traffic_source', _('Traffic Data Source'));
+		o.value('ctstat', _('ctstat (nftables / conntrack, via ubus)'));
 		o.value('wrtbwmon', _('wrtbwmon (iptables)'));
 		o.value('oaf', _('OAF / OpenAppFilter (nftables, via ubus)'));
-		o.value('auto', _('Auto (prefer wrtbwmon, then OAF)'));
+		o.default = 'ctstat';
+		o.description = _('Choose where per-client traffic statistics come from. ctstat reads cumulative download/upload per client from luci.ctstat over ubus and coexists with firewall4/nftables; wrtbwmon counts via iptables; OAF uses the fwx ubus object.');
+
+		o = s.taboption('basic', form.Value, 'ctstat_timeout', _('ctstat RPC timeout (seconds)'));
+		o.default = '5';
+		o.datatype = 'range(1, 30)';
+		o.depends('traffic_source', 'ctstat');
+		o.description = _('Maximum time to wait for luci.ctstat.get_stats over ubus. Increase it on slow routers; a failed call keeps the last successful traffic snapshot.');
+
+		o = s.taboption('basic', form.ListValue, 'wrtbwmon_mode', _('wrtbwmon compatibility mode'));
+		o.value('auto', _('Auto (detect by package version)'));
+		o.value('modern', _('Modern (wrtbwmon -f, 1.2.0+)'));
+		o.value('legacy', _('Legacy (wrtbwmon update, 1.0.x)'));
 		o.default = 'auto';
-		o.description = _('Choose where per-client traffic statistics come from. Use OAF on firewall4/nftables systems to avoid legacy iptables rules; requires luci-app-oaf installed. The OAF source reports daily traffic that resets at midnight.');
+		o.depends('traffic_source', 'wrtbwmon');
+		o.description = _('Override the wrtbwmon command form when automatic version detection selects the wrong syntax.');
+
+		o = s.taboption('basic', form.ListValue, 'oaf_api', _('OAF ubus API'));
+		o.value('auto', _('Auto (get_user_stat, then top users)'));
+		o.value('user_stat', _('get_user_stat (all clients)'));
+		o.value('top_users', _('get_daily_top_users (top 8 only)'));
+		o.default = 'auto';
+		o.depends('traffic_source', 'oaf');
+		o.description = _('Select which fwx ubus interface supplies per-client traffic. get_user_stat returns all clients; get_daily_top_users only returns the top 8.');
 
 		o = s.taboption('basic', form.Flag, 'traffic_accumulate', _('Accumulate Total Traffic Across Days (OAF only)'));
 		o.default = '0';
 		o.depends('traffic_source', 'oaf');
-		o.depends('traffic_source', 'auto');
-		o.description = _('When using OAF, let wechatpush keep a running total across days by detecting the midnight reset and adding each completed day to a baseline. Wrtbwmon already accumulates by itself, so this has no effect there. Turn OFF "Reset Traffic Data Every Day at Midnight" when enabling this.');
+		o.description = _('When using OAF, let wechatpush keep a running total across days by detecting the midnight reset and adding each completed day to a baseline. Wrtbwmon and ctstat already accumulate by themselves, so this has no effect there. Turn OFF "Reset Traffic Data Every Day at Midnight" when enabling this.');
 
 		o = s.taboption('basic', form.Flag, 'reset_regularly', _('Reset Traffic Data Every Day at Midnight'));
 

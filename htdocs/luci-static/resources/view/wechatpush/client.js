@@ -14,6 +14,7 @@ function parseUsageDb(raw) {
 	if (lines.length < 2) return map;
 	var header = lines[0].split(',');
 	var macIdx = header.indexOf('mac');
+	var ipIdx = header.indexOf('ip');
 	var inIdx = header.indexOf('in');
 	var outIdx = header.indexOf('out');
 	var totalIdx = header.indexOf('total');
@@ -27,6 +28,13 @@ function parseUsageDb(raw) {
 		var vout = outIdx >= 0 ? (parseInt(cols[outIdx], 10) || 0) : 0;
 		var vtotal = totalIdx >= 0 ? (parseInt(cols[totalIdx], 10) || 0) : (vin + vout);
 		map[mac] = { in: vin, out: vout, total: vtotal };
+		// ctstat 对未知 MAC 的客户端以 IP 作为键，同时写入 ip 列，这里也建立索引，
+		// 保证在线设备页无论能否解析 MAC 都能找到对应流量。
+		if (ipIdx >= 0 && cols[ipIdx]) {
+			var ip = cols[ipIdx].trim().toLowerCase();
+			if (ip && ip !== 'ip' && ip !== '0')
+				map[ip] = map[mac];
+		}
 	}
 	return map;
 }
@@ -94,7 +102,7 @@ return view.extend({
 					} else {
 						device.interface = "LAN";
 					}
-					var traffic = usageMap[(device.mac || '').toLowerCase()];
+					var traffic = usageMap[(device.mac || '').toLowerCase()] || usageMap[(device.ip || '').toLowerCase()];
 					if (traffic) {
 						device.traffic_in = traffic.in;
 						device.traffic_out = traffic.out;

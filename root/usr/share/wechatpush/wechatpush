@@ -47,7 +47,7 @@ read_config() {
 		"jsonpath" "sckey" "sc3key" "sc3uid" "sc3tags" "corpid" "userid" "agentid" "corpsecret" "mediapath" "wxpusher_apptoken" "wxpusher_uids" "wxpusher_topicIds" "pushplus_token" "wpush_apikey" "tg_api_server" "tg_token" "tg_chat_id" "tg_thread_id" "recipient_email" "smtp_host" "smtp_port" "smtp_tls" "smtp_starttls" "smtp_user" "smtp_passwordeval" "smtp_from" "smtp_from_full_name" \
 		"get_ipv4_mode" "ipv4_interface" "get_ipv6_mode" "ipv6_interface" \
 		"device_notification" "cpu_notification" "cpu_load_threshold" "temperature_threshold" \
-		"client_usage" "client_usage_max" "client_usage_disturb" "client_usage_whitelist" "traffic_source" "traffic_accumulate" \
+		"client_usage" "client_usage_max" "client_usage_disturb" "client_usage_whitelist" "traffic_source" "traffic_accumulate" "ctstat_timeout" "wrtbwmon_mode" "oaf_api" \
 		"login_notification" "login_max_num" "login_web_black" "login_ip_black_timeout" "block_blacklisted_forwarding" "login_ip_white_list" "port_knocking_enable" "login_ip_white_timeout" "login_port_white" "login_port_forward_list" \
 		"crontab_regular_time" "crontab_interval_time" \
 		"do_not_disturb_mode" "do_not_disturb_starttime" "do_not_disturb_endtime" "up_down_push_whitelist" "up_down_push_blacklist" "up_down_push_interface" "mac_online_list" "mac_offline_list" "cpu_threshold_duration" "cpu_notification_delay" "login_disturb" "login_notification_delay" "login_log_enable" \
@@ -69,41 +69,49 @@ read_config() {
 	(echo "$device_info_helper" | grep -q "openwrt_info") && openwrt_info_enable="true"
 	op_host_ips=$(echo "$op_host_ips" | sed 's/ /\n/g') 2>/dev/null
 
-	# ===== 流量数据源选择 (wrtbwmon / oaf / auto) =====
-	# 空值或未设置时默认 wrtbwmon，保持向后兼容
-	[ -z "$traffic_source" ] && traffic_source="wrtbwmon"
-	# 探测 OAF 守护进程：ubus 上存在 fwx 对象即认为可用
+	# ===== 流量数据源选择 (ctstat / wrtbwmon / oaf) =====
+	# 空值或历史值 auto 按兼容性映射：优先 ctstat，其次 wrtbwmon，最后 oaf。
+	[ -z "$traffic_source" ] && traffic_source="ctstat"
+	[ "$traffic_source" = "auto" ] && traffic_source="ctstat"
+
+	# 探测可用的 ubus 对象
+	ctstat_available="0"
 	oaf_available="0"
-	if command -v ubus >/dev/null 2>&1 && ubus list 2>/dev/null | grep -qw "fwx"; then
-		oaf_available="1"
+	if command -v ubus >/dev/null 2>&1; then
+		ubus list 2>/dev/null | grep -qw "luci.ctstat" && ctstat_available="1"
+		ubus list 2>/dev/null | grep -qw "fwx" && oaf_available="1"
 	fi
+
 	case "$traffic_source" in
 		oaf)
-			# 显式指定 OAF：不做启动期降级。
-			# 启动顺序（fwx 尚未注册 ubus 对象）会让探测误判，若此时降级到 wrtbwmon
-			# 就会永久卡在错误后端；这里固定为 oaf，由 usage_oaf_update 每次自行重试。
+			# 显式指定：不做启动期降级，后端方法会自行重试，避免两套口径混用。
 			traffic_backend="oaf"
 			[ "$oaf_available" -eq 1 ] || oaf_startup_missing="1"
 			;;
-		auto)
-			# 优先 wrtbwmon（原始行为），无 wrtbwmon 时用 OAF
-			if [ -f "/usr/sbin/wrtbwmon" ]; then
-				traffic_backend="wrtbwmon"
-			elif [ "$oaf_available" -eq 1 ]; then
-				traffic_backend="oaf"
-			else
-				# 没装 wrtbwmon：只能等 OAF，不能降级到不存在的后端（否则流量恒为 0）
-				traffic_backend="oaf"
-				oaf_startup_missing="1"
-			fi
-			;;
-		*)
+		wrtbwmon)
 			traffic_backend="wrtbwmon"
+			;;
+		ctstat|*)
+			# ctstat 为默认源。开机瞬间 rpcd 可能尚未注册，固定后端并每周期重试。
+			traffic_backend="ctstat"
+			[ "$ctstat_available" -eq 1 ] || ctstat_startup_missing="1"
 			;;
 	esac
 
-	# ===== 跨天累计总流量（仅 OAF 后端有意义；wrtbwmon 自身即为累计值） =====
-	# traffic_accumulate=1 且使用 OAF 时启用：wechatpush 维护累计基线，抵消 OAF 每日零点归零。
+	# 来源专属设置：默认值与合法性收敛，后端逻辑直接引用这些变量
+	case "$ctstat_timeout" in
+		''|*[!0-9.]*) ctstat_timeout="5" ;;
+	esac
+	case "$wrtbwmon_mode" in
+		modern|legacy) : ;;
+		*) wrtbwmon_mode="auto" ;;
+	esac
+	case "$oaf_api" in
+		user_stat|top_users) : ;;
+		*) oaf_api="auto" ;;
+	esac
+
+	# ===== 跨天累计总流量（仅 OAF 后端有意义；wrtbwmon/ctstat 自身即为累计值） =====
 	traffic_accumulate_enabled="0"
 	if [ "$traffic_backend" = "oaf" ] && [ "$traffic_accumulate" = "1" ]; then
 		traffic_accumulate_enabled="1"
@@ -213,12 +221,13 @@ init() {
 	fi
 
 	# 配置检查
-	# 流量数据源健康检查：按实际后端提示，避免 OAF 模式误报 wrtbwmon 缺失
-	if [ "$traffic_backend" = "oaf" ]; then
+	# 流量数据源健康检查：按实际后端提示，避免选 OAF/ctstat 时误报 wrtbwmon 缺失
+	if [ "$traffic_backend" = "ctstat" ]; then
+		log_change "[INFO] Traffic source: ctstat (ubus luci.ctstat)"
+		[ "$ctstat_startup_missing" = "1" ] && log_change "[WARN] ctstat (ubus luci.ctstat) not ready yet, traffic update will retry every cycle"
+	elif [ "$traffic_backend" = "oaf" ]; then
 		log_change "[INFO] Traffic source: OAF (ubus fwx)"
 		[ "$oaf_startup_missing" = "1" ] && log_change "[WARN] OAF (ubus fwx) not ready yet, traffic update will retry every cycle"
-	elif [ "$traffic_source" = "auto" ] && [ "$oaf_available" = "1" ]; then
-		log_change "[INFO] Traffic source: auto -> OAF (ubus fwx)"
 	else
 		[ ! -f "/usr/sbin/wrtbwmon" ] && log_change "[WARN] $(translate "wrtbwmon not installed, traffic statistics unavailable") (traffic source: wrtbwmon)"
 	fi
@@ -1120,20 +1129,21 @@ usage_oaf_update() {
 	command -v ubus >/dev/null 2>&1 || return 1
 	command -v jq >/dev/null 2>&1 || return 1
 	local ubus_resp
-	ubus_resp=$(ubus call fwx common '{"api":"get_user_stat","data":{}}' 2>/dev/null) || return 1
-	[ -z "$ubus_resp" ] && return 1
-	echo "$ubus_resp" | grep -q '"code"[[:space:]]*:[[:space:]]*2000' || return 1
-
 	local raw="${dir}/usage.db.raw.$$"
 	local tmp="${dir}/usage.db.oaf.$$"
-	# raw 格式(无表头): mac,in,out,total  —— in=下载(df), out=上传(uf), total=df+uf
-	if echo "$ubus_resp" | grep -q '"data"[[:space:]]*:[[:space:]]*{'; then
-		echo "$ubus_resp" | jq -r '.data.l[]? | [(.m // ""), (.df // 0), (.uf // 0), ((.df // 0)+(.uf // 0))] | @tsv' 2>/dev/null | \
-		awk -F'\t' 'NF>=4 && $1!="" { printf "%s,%s,%s,%s\n", $1, $2, $3, $4 }' > "$raw"
+
+	# oaf_api=user_stat 只用 get_user_stat；top_users 只用 get_daily_top_users；
+	# auto 先试 get_user_stat，为空再退回 top_users（兼容老版本 OAF）。
+	if [ "$oaf_api" != "top_users" ]; then
+		ubus_resp=$(ubus call fwx common '{"api":"get_user_stat","data":{}}' 2>/dev/null) || ubus_resp=""
+		if [ -n "$ubus_resp" ] && echo "$ubus_resp" | grep -q '"code"[[:space:]]*:[[:space:]]*2000'; then
+			echo "$ubus_resp" | jq -r '.data.l[]? | [(.m // ""), (.df // 0), (.uf // 0), ((.df // 0)+(.uf // 0))] | @tsv' 2>/dev/null | \
+			awk -F'\t' 'NF>=4 && $1!="" { printf "%s,%s,%s,%s\n", $1, $2, $3, $4 }' > "$raw"
+		fi
 	fi
-	# 若 get_user_stat 返回空（老版本 OAF 无此接口），尝试 get_daily_top_users 兜底
-	if [ ! -s "$raw" ]; then
+	if [ ! -s "$raw" ] && [ "$oaf_api" != "user_stat" ]; then
 		ubus_resp=$(ubus call fwx common '{"api":"get_daily_top_users","data":{}}' 2>/dev/null) || { rm -f "$raw" "$tmp"; return 1; }
+		[ -n "$ubus_resp" ] || { rm -f "$raw" "$tmp"; return 1; }
 		echo "$ubus_resp" | jq -r '.data.users[]? | [(.mac // ""), (.down_bytes // 0), (.up_bytes // 0), (.total_bytes // 0)] | @tsv' 2>/dev/null | \
 		awk -F'\t' 'NF>=4 && $1!="" { printf "%s,%s,%s,%s\n", $1, $2, $3, $4 }' > "$raw"
 	fi
@@ -1187,10 +1197,60 @@ usage_oaf_update() {
 	return 0
 }
 
+# 从 ctstat (luci.ctstat.get_stats) 读取每客户端累计流量，生成与 wrtbwmon usage.db 兼容的 CSV。
+# ctstat 的 devices 是以 MAC（未知 MAC 时为 IP）为键的对象，字段 in_bytes=下载、out_bytes=上传，
+# 均为守护进程启动以来的累计值。这里按客户端写出 in/out，并令 total = in + out，
+# 使在线设备页与定时推送的设备列表口径一致。
+usage_ctstat_update() {
+	command -v ubus >/dev/null 2>&1 || return 1
+	command -v jq >/dev/null 2>&1 || return 1
+
+	local resp
+	resp=$(ubus -t "$ctstat_timeout" call luci.ctstat get_stats '{}' 2>/dev/null) || return 1
+	[ -z "$resp" ] && return 1
+	echo "$resp" | jq -e '.devices | type == "object"' >/dev/null 2>&1 || return 1
+
+	local raw="${dir}/usage.db.raw.$$"
+	local tmp="${dir}/usage.db.ctstat.$$"
+	# raw: key<TAB>ip<TAB>in<TAB>out
+	if ! echo "$resp" | jq -r '
+		.devices | to_entries[] |
+		select((.key // "") != "") |
+		select(.key != "router" and (.key | startswith("(") | not)) |
+		[ .key, (.value.ip // ""), (.value.in_bytes // 0), (.value.out_bytes // 0) ] | @tsv
+	' 2>/dev/null | awk -F'\t' 'NF>=4 && $1!="" {
+		k=tolower($1)
+		printf "%s\t%s\t%.0f\t%.0f\n", k, (($2=="")?k:$2), $3+0, $4+0
+	}' > "$raw"; then
+		rm -f "$raw" "$tmp"
+		return 1
+	fi
+	[ -s "$raw" ] || { rm -f "$raw" "$tmp"; return 1; }
+
+	# 表头列序与 wrtbwmon 默认列号一致：in=4、out=5、total=6
+	echo 'no,ip,mac,in,out,total,used' > "$tmp"
+	awk -F'\t' -v out="$tmp" '{
+		total=$3+$4
+		printf "%d,%s,%s,%.0f,%.0f,%.0f,0\n", NR, $2, $1, $3, $4, total >> out
+	}' "$raw"
+	rm -f "$raw"
+
+	# 空数据不覆盖上一份，避免临时 RPC 抖动把界面流量清零
+	[ "$(grep -c "" "$tmp" 2>/dev/null || echo 0)" -gt 1 ] || { rm -f "$tmp"; return 1; }
+	mv -f "$tmp" "${dir}/usage.db" 2>/dev/null || { rm -f "$tmp"; return 1; }
+	return 0
+}
+
 usage() {
 	[ -z "$1" ] && return
 	# 更新
 	if [ $1 == "update" ]; then
+		# ctstat 后端：从 ubus luci.ctstat 拉取累计流量
+		if [ "$traffic_backend" = "ctstat" ]; then
+			usage_ctstat_update && return
+			# 显式选择 ctstat 时不回退到其它后端，避免两套口径混用
+			return
+		fi
 		# OAF 后端：从 ubus 拉取 OAF 流量数据
 		if [ "$traffic_backend" = "oaf" ]; then
 			usage_oaf_update && return
@@ -1203,8 +1263,18 @@ usage() {
 		[ ! -f "/usr/sbin/wrtbwmon" ] && return
 		version_le() { test "$(echo "$@" | tr " " "\n" | sort -n | head -n 1)" == "$1"; }
 		version_ge() { test "$(echo "$@" | tr " " "\n" | sort -r | head -n 1)" == "$1"; }
-		[ -n "$wr_version" ] && (version_ge "${wr_version}" "1.2.0") && wrtbwmon -f ${dir}/usage.db 2>/dev/null && return
-		[ -n "$wr_version" ] && (version_le "${wr_version}" "1.0.0") || [ -z "$wr_version" ] && wrtbwmon update ${dir}/usage.db 2>/dev/null && return
+		case "$wrtbwmon_mode" in
+			modern)
+				wrtbwmon -f ${dir}/usage.db 2>/dev/null && return
+				;;
+			legacy)
+				wrtbwmon update ${dir}/usage.db 2>/dev/null && return
+				;;
+			*)
+				[ -n "$wr_version" ] && (version_ge "${wr_version}" "1.2.0") && wrtbwmon -f ${dir}/usage.db 2>/dev/null && return
+				[ -n "$wr_version" ] && (version_le "${wr_version}" "1.0.0") || [ -z "$wr_version" ] && wrtbwmon update ${dir}/usage.db 2>/dev/null && return
+				;;
+		esac
 	# 获取
 	elif [ $1 == "get" ]; then
 		[ ! -f "${dir}/usage.db" ] && [ -z "$3" ] && echo $(bytes_for_humans "0") && return

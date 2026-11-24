@@ -1,99 +1,115 @@
-# Introduction
+# luci-app-wechatpush-pro
 
-[![Lastest Release](https://img.shields.io/github/release/tty228/luci-app-wechatpush.svg?style=flat)](https://github.com/tty228/luci-app-wechatpush/releases)
-[![GitHub All Releases](https://img.shields.io/github/downloads/tty228/luci-app-wechatpush/total)](https://github.com/tty228/luci-app-wechatpush/releases)
+An OpenWrt notification package that pushes client online/offline events, WAN IP changes, router status, abnormal traffic and security events to WeChat, WeCom, Telegram, email or a custom API.
 
-[中文文档](README.md) | [English](README_en.md)
+This repository is a customized fork of [tty228/luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush). The package name, repository name and LuCI menu entry are now **luci-app-wechatpush-pro**. The default traffic source is **ctstat**, with wrtbwmon and OAF still available.
 
-**OpenWrt Notification Plugin – Send Alerts to WeChat or Telegram**
+## Features
 
-This OpenWrt plugin delivers real-time router notifications to your mobile device via **WeChat** or **Telegram** or **Mail**. Monitor your network with alerts for:
+- Client online/offline notifications with per-client cumulative download and upload traffic
+- IPv4 / IPv6 address change pushes
+- CPU load, temperature, memory, disk and PVE host monitoring
+- Scheduled router status and online client list pushes
+- Web / SSH login alerts, automatic IP blocking and port knocking
+- Unattended tasks: scheduled reboot, PPPoE reconnection, device aliases and quiet hours
 
-- [x] IP changes (IPv4/IPv6)
-- [x] Device connections (online/offline)
-- [x] Online client list & traffic usage
-- [x] CPU load & temperature (including virtualized hosts like PVE)
-- [x] Router status reports
-- [x] Security alerts (failed web/SSH logins with auto blacklist)
-- [x] Port knocking & automated tasks
+## Notification channels
 
-Auto-banning blocks blacklisted IPs from accessing the router. Optionally block all forwarded traffic from blacklisted IPs, including access to port-forwarded downstream devices and Internet access by LAN clients. With forwarded-traffic blocking enabled and conntrack installed, banning also attempts to clear that IP's existing connection-tracking entries to interrupt offloaded flows; without conntrack, this step is skipped while new connections remain blocked by the blacklist rules. Turning the option off, or turning auto-ban off, removes the forwarded-traffic drop rules on the next detection cycle; like the router-access drop rules, they are not removed by stopping the service, disappear after a firewall reload or reboot, and are restored on the plugin's next detection cycle while it runs. fw4 timed bans are restored with their last recorded remaining duration. Set the blacklist duration to `0` for permanent bans; remove the IP from the blacklist to lift the ban.
+| Channel | Backend |
+| --- | --- |
+| WeChat | ServerChan, PushPlus, WPUSH, WxPusher |
+| WeCom | Work WeChat app messages (text / markdown / mpnews) |
+| Telegram | Bot API |
+| Email | msmtp |
+| Custom | User-defined API JSON templates |
 
-Supported services:
-| Push application | Method | description |
-| :-------- | :----- | :----- |
-| WeChat | Server Chan | https://sct.ftqq.com/
-| WeChat | PushPlus | http://www.pushplus.plus/
-| WeChat etc. | WPUSH | https://wpush.cn/
-| WeChat | WxPusher | https://wxpusher.zjiecode.com/docs
-| WeChat for Enterprise | Application Push | https://work.weixin.qq.com/api/doc/90000/90135/90248
-| Telegram | bot | https://t.me/BotFather
-| Mail | msmtp | https://marlam.de/msmtp/
+## Installation
 
-Limited resources are available. If you need services such as DingTalk push, Feishu push, Bark push, etc., please try another branch at https://github.com/zzsj0928/luci-app-pushbot, or use **custom API settings**.
+Releases ship both package formats:
 
-## Instructions
+| File | Target |
+| --- | --- |
+| `luci-app-wechatpush-pro_1.1-1_all.ipk` | OpenWrt 19.07 – 24.10 (opkg) |
+| `luci-app-wechatpush-pro-1.1-r1.apk` | OpenWrt 25.12+ (apk) |
+| `luci-i18n-wechatpush-pro-zh-cn_1.1-1_all.ipk` / `.apk` | Simplified Chinese translations |
 
-**Regarding Installation:**
+```sh
+# opkg
+opkg update
+opkg install luci-app-wechatpush-pro_1.1-1_all.ipk
+opkg install luci-i18n-wechatpush-pro-zh-cn_1.1-1_all.ipk
 
-The plugin requires dependencies on iputils-arping + curl + jq + bash. For routers with limited memory, please consider the installation carefully. **Before installing, please run the opkg update command to install dependencies during the installation process.**
+# apk
+apk add --allow-untrusted luci-app-wechatpush-pro-1.1-r1.apk
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.1-r1.apk
+```
 
-Developed based on X86 OpenWrt v23.05.0, different systems and devices may encounter various issues. **If you encounter errors in temperature information retrieval, display errors, or other issues, please adapt accordingly.**
+Base dependencies: `iputils-arping`, `curl`, `jq`, `bash`, `luci-lua-runtime`.
+Optional build-time dependencies: wrtbwmon (only for the wrtbwmon traffic source), lsblk / smartmontools (disk information), openssh-client / openssh-keygen (host information).
 
-**Regarding Hostnames:**
+After installation, open **Services → WeChat Push-pro** in LuCI.
 
-For devices that do not declare hostnames, devices connected via optical modem dial-up, OpenWrt used as a bypass gateway, and other scenarios where hostname retrieval fails, you can set the hostname using the following methods:
+## Traffic data sources
 
-- Use device name remarks.
-- Configure to obtain the hostname from the optical modem in advanced settings.
-- Enable MAC device database.
-- Install samba*-server or samba*-client to enable the program to query hostnames via NetBIOS.
+Select under **Basic Settings → Traffic Data Source**. Source-specific options appear below the selector.
 
+### ctstat (default, recommended)
 
-**Regarding Device Online Status:**
+Calls `luci.ctstat.get_stats` over ubus and reads cumulative per-client download/upload byte counters from the ctstat daemon.
 
-By default, ping/arping is used to actively detect device online status to counter Wi-Fi sleep mechanism. Active detection takes more time but provides more accurate device online status.
+- Requires `luci-app-ctstat` to be installed and running.
+- Works on conntrack / nftables, creates no iptables rules and coexists with firewall4.
+- The online clients table shows **total download** and **total upload** per client. In the scheduled client list, **Total Traffic** is the sum of download and upload for that client.
+- Counters are cumulative since the ctstat daemon started; they restart when ctstat is restarted or reset.
+- Clients without a known MAC are keyed by IP in ctstat. The plugin matches by both MAC and IP so the traffic columns are not lost.
 
-- If devices frequently go into sleep mode, please adjust the timeout settings in advanced settings.
-- If you don't require highly precise device online information and only need other features, you can disable active detection in advanced settings.
+Source-specific setting: **ctstat RPC timeout (seconds)** (default 5, range 1–30). Increase it on slow routers. A failed call keeps the last successful snapshot instead of zeroing traffic.
 
+### wrtbwmon (original behavior)
 
-**Regarding Traffic Statistics:**
+Reads the `usage.db` produced by wrtbwmon. This source counts traffic via iptables and may conflict with Routing/NAT, Flow Offloading and proxy plugins; it also creates legacy iptables rule warnings on firewall4.
 
-This branch supports two traffic data sources, selectable under "Basic Settings → Traffic Data Source":
+Source-specific setting: **wrtbwmon compatibility mode**.
 
-1. **wrtbwmon**: original behavior, relies on wrtbwmon and counts via iptables. **Conflicts with Routing/NAT, Flow Offloading and proxy plugins, and produces "legacy iptables rules" warnings on firewall4/nftables systems.**
-2. **OAF / OpenAppFilter (recommended for nftables)**: reads per-client `m` (MAC) / `uf` (upload) / `df` (download) for **all clients** via `ubus call fwx common {"api":"get_user_stat"}`. **Creates no iptables rules and coexists with firewall4/nftables.** Requires `luci-app-oaf` / `open-app-filter` installed and traffic stats enabled. OAF reports **daily traffic that resets at midnight**.
+- Auto: detect the command syntax from the package version
+- Modern: `wrtbwmon -f` (1.2.0+)
+- Legacy: `wrtbwmon update` (1.0.x)
 
-   **Accuracy caveat (important)**: OAF counts packets in the netfilter `NF_INET_FORWARD` hook. Once software/hardware flow offloading (flowtable, HNAT, ECM, PPE, …) is enabled, offloaded flows bypass that hook and per-client traffic is **significantly undercounted**. Cross-check with `nft list flowtable inet fw4` and `/proc/net/dev`; OAF ships `fwx.advanced.disable_hnat=1` to disable offloading on some platforms (at the cost of throughput/CPU).
-3. **Auto**: uses wrtbwmon when installed, otherwise OAF (new default).
+### OAF / OpenAppFilter
 
-When using OAF you can leave "Enable Traffic Monitoring (wrtbwmon)" off at build time. At runtime the plugin detects the `fwx` ubus object; with an explicit OAF selection it keeps retrying every cycle instead of falling back permanently if `fwx` is not registered yet at boot. OAF data is read-only via standard ubus; if a call fails that update is skipped and the previous `usage.db` is kept (never cleared). Falling back to wrtbwmon only happens with `traffic_source=auto`, because mixing the two accounting models makes totals jump and can raise bogus "abnormal traffic" alerts.
+Reads per-client traffic via `ubus call fwx common`. It creates no iptables rules. Requires `open-app-filter` / `luci-app-oaf` with traffic statistics enabled.
 
-**About Hard Drive Information:**
+Source-specific settings:
 
-When the OpenWrt system or remote host (PVE) does not have lsblk installed, the hard drive capacity information may be inconsistent with the actual capacity.
+- **OAF ubus API**: Auto / `get_user_stat` (all clients) / `get_daily_top_users` (top 8 only).
+- **Accumulate Total Traffic Across Days**: OAF resets daily. The plugin keeps a baseline and adds the completed day to the cumulative total. Disable "Reset Traffic Data Every Day at Midnight" when using this option.
+- If software/hardware flow offloading is enabled, OAF's netfilter hook may be bypassed and per-client traffic will be undercounted. Use ctstat in that case.
 
-When the OpenWrt system or remote host (PVE) does not have smartctl installed, information such as hard drive temperature, uptime, and health status will not be available.
+## Tips
 
-**Regarding Bug Submissions:**
+- If a client hostname cannot be resolved, set an alias by MAC or IP, or install a Samba client for NetBIOS lookup.
+- Active probing with ping/arping is used by default to detect sleeping Wi-Fi clients. Adjust timeouts or disable probing in Advanced Settings if needed.
+- Automatic blocking only filters traffic to the router by default. Enable "block forwarded traffic for blacklisted IPs" to filter traffic passing through the router. On fw4, remaining ban time is restored from the last recorded value.
+- Stopping the service does not immediately remove active firewall rules; they disappear on firewall reload/reboot and are restored by the next detection cycle while the service runs.
 
-When submitting a bug, please provide the following information if possible:
+## Troubleshooting
 
-- Device information and plugin version number.
-- Prompt information after executing `/usr/share/wechatpush/wechatpush`.
-- Log information and file information in the `/tmp/wechatpush/` directory after encountering an error.
-- Detailed execution information of `bash -x /usr/share/wechatpush/wechatpush t1`.
+Please include the following when reporting an issue:
 
-## DownLoad
+- Device model, OpenWrt version, package version and selected traffic source
+- Direct output of `/usr/share/wechatpush/wechatpush`
+- `/tmp/wechatpush/wechatpush.log` and `/tmp/wechatpush/usage.db`
+- Verbose logs from `bash -x /usr/share/wechatpush/wechatpush t1`
 
-| Supported OpenWrt Versions | Download Link |
-| :-------- | :----- |
-| openwrt-19.07.0 ... latest | [![Lastest Release](https://img.shields.io/github/release/tty228/luci-app-wechatpush.svg?style=flat)](https://github.com/tty228/luci-app-wechatpush/releases)
-| openwrt-18.06 | [![Release v2.06.2](https://img.shields.io/badge/release-v2.06.2-lightgrey.svg)](https://github.com/tty228/luci-app-wechatpush/releases/tag/v2.06.2)
+Useful checks:
 
-## Donate
+```sh
+ubus list | grep -E 'luci\.ctstat|fwx'
+ubus call luci.ctstat get_stats '{}' | jq '.devices | length'
+cat /tmp/wechatpush/usage.db
+/etc/init.d/wechatpush restart
+```
 
-If you feel that this project is helpful to you, please donate to us so that the project can continue to develop and be more perfect.
+## License
 
-![image](https://github.com/tty228/luci-app-wechatpush/blob/master/.github/others/20260303202537_34_664.png)
+GPL-2.0-or-later. Upstream project maintained by tty228; this fork provides customization and package maintenance.

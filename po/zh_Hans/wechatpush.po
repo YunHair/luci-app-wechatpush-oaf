@@ -392,21 +392,73 @@ msgstr "wrtbwmon（iptables 计数）"
 msgid "OAF / OpenAppFilter (nftables, via ubus)"
 msgstr "OAF / OpenAppFilter（nftables，通过 ubus）"
 
+#: traffic source option (ctstat support)
+msgid "ctstat (nftables / conntrack, via ubus)"
+msgstr "ctstat（nftables / conntrack，通过 ubus）"
+
 #: traffic source option (OAF support)
 msgid "Auto (prefer wrtbwmon, then OAF)"
 msgstr "自动（优先 wrtbwmon，其次 OAF）"
 
-#: traffic source option (OAF support)
-msgid "Choose where per-client traffic statistics come from. Use OAF on firewall4/nftables systems to avoid legacy iptables rules; requires luci-app-oaf installed. The OAF source reports daily traffic that resets at midnight."
-msgstr "选择每台客户端流量统计的数据来源。在 firewall4/nftables 系统上请选用 OAF，以避免产生旧版 iptables 规则；需已安装 luci-app-oaf。OAF 数据源统计当天流量，每天零点自动归零。"
+#: traffic source option (ctstat support)
+msgid "Choose where per-client traffic statistics come from. ctstat reads cumulative download/upload per client from luci.ctstat over ubus and coexists with firewall4/nftables; wrtbwmon counts via iptables; OAF uses the fwx ubus object."
+msgstr "选择每台客户端流量统计的数据来源。ctstat 通过 ubus 从 luci.ctstat 读取每台设备的累计下载/上传流量，可与 firewall4/nftables 共存；wrtbwmon 通过 iptables 计数；OAF 使用 fwx ubus 对象。"
+
+#: ctstat timeout option
+msgid "ctstat RPC timeout (seconds)"
+msgstr "ctstat RPC 超时（秒）"
+
+#: ctstat timeout option
+msgid "Maximum time to wait for luci.ctstat.get_stats over ubus. Increase it on slow routers; a failed call keeps the last successful traffic snapshot."
+msgstr "通过 ubus 调用 luci.ctstat.get_stats 的最长等待时间。路由器较慢时可适当调大；调用失败会保留上一次成功的流量快照。"
+
+#: wrtbwmon compatibility mode
+msgid "wrtbwmon compatibility mode"
+msgstr "wrtbwmon 兼容模式"
+
+#: wrtbwmon compatibility mode
+msgid "Auto (detect by package version)"
+msgstr "自动（按软件包版本检测）"
+
+#: wrtbwmon compatibility mode
+msgid "Modern (wrtbwmon -f, 1.2.0+)"
+msgstr "新版（wrtbwmon -f，1.2.0+）"
+
+#: wrtbwmon compatibility mode
+msgid "Legacy (wrtbwmon update, 1.0.x)"
+msgstr "旧版（wrtbwmon update，1.0.x）"
+
+#: wrtbwmon compatibility mode
+msgid "Override the wrtbwmon command form when automatic version detection selects the wrong syntax."
+msgstr "当自动版本检测选错命令格式时，可手动覆盖 wrtbwmon 的调用方式。"
+
+#: OAF ubus API option
+msgid "OAF ubus API"
+msgstr "OAF ubus 接口"
+
+#: OAF ubus API option
+msgid "Auto (get_user_stat, then top users)"
+msgstr "自动（先 get_user_stat，再 top users）"
+
+#: OAF ubus API option
+msgid "get_user_stat (all clients)"
+msgstr "get_user_stat（全部设备）"
+
+#: OAF ubus API option
+msgid "get_daily_top_users (top 8 only)"
+msgstr "get_daily_top_users（仅前 8 台）"
+
+#: OAF ubus API option
+msgid "Select which fwx ubus interface supplies per-client traffic. get_user_stat returns all clients; get_daily_top_users only returns the top 8."
+msgstr "选择由哪个 fwx ubus 接口提供每客户端流量。get_user_stat 返回全部设备；get_daily_top_users 只返回流量最高的 8 台。"
 
 #: traffic accumulate option (OAF support)
 msgid "Accumulate Total Traffic Across Days (OAF only)"
 msgstr "跨天累计总流量（仅 OAF 有效）"
 
 #: traffic accumulate option (OAF support)
-msgid "When using OAF, let wechatpush keep a running total across days by detecting the midnight reset and adding each completed day to a baseline. Wrtbwmon already accumulates by itself, so this has no effect there. Turn OFF \"Reset Traffic Data Every Day at Midnight\" when enabling this."
-msgstr "使用 OAF 时，让 wechatpush 自动检测零点归零、把每天流量累加到基线，从而得到跨天累计总流量。wrtbwmon 自身已累计，此选项对其无效。开启本项时请关闭“每天零点重置流量数据”。"
+msgid "When using OAF, let wechatpush keep a running total across days by detecting the midnight reset and adding each completed day to a baseline. Wrtbwmon and ctstat already accumulate by themselves, so this has no effect there. Turn OFF \"Reset Traffic Data Every Day at Midnight\" when enabling this."
+msgstr "使用 OAF 时，让 wechatpush 自动检测零点归零、把每天流量累加到基线，从而得到跨天累计总流量。wrtbwmon 和 ctstat 自身已累计，此选项对其无效。开启本项时请关闭“每天零点重置流量数据”。"
 
 #: applications/luci-app-wechatpush/htdocs/luci-static/resources/view/wechatpush/config.js:287
 msgid "Enable Logging"

@@ -1,112 +1,115 @@
-## 简介
+# luci-app-wechatpush-pro
 
-[![Lastest Release](https://img.shields.io/github/release/tty228/luci-app-wechatpush.svg?style=flat)](https://github.com/tty228/luci-app-wechatpush/releases)
-[![GitHub All Releases](https://img.shields.io/github/downloads/tty228/luci-app-wechatpush/total)](https://github.com/tty228/luci-app-wechatpush/releases)
+OpenWrt 路由器通知插件：把设备上下线、公网 IP 变化、运行状态、异常流量与安全事件推送到微信、企业微信、Telegram、邮件或自定义 API。
 
-[中文文档](README.md) | [English](README_en.md)
+本仓库是 [tty228/luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush) 的定制分支，包名、仓库名与 LuCI 菜单均已改为 **luci-app-wechatpush-pro**。默认流量来源为 **ctstat**，同时保留 wrtbwmon 与 OAF 两种来源。
 
-这是一款用于 OpenWRT 路由器上进行 微信、Telegram、邮件 通知的插件。
+## 功能
 
-主要功能：
-- [x] 路由 IP、IPv6 变动推送
-- [x] 设备 上线、离线 推送
-- [x] 设备在线列表及流量使用情况
-- [x] CPU 负载、温度监视、PVE 宿主机温度监控
-- [x] 路由运行状态定时推送
-- [x] 路由 Web、SSH 登录提示，自动拉黑、端口敲门
-- [x] 无人值守任务
+- 设备上线 / 离线通知，在线设备列表与每客户端累计下载 / 上传流量
+- IPv4 / IPv6 地址变化推送
+- CPU 负载、温度、内存、磁盘与 PVE 宿主机状态推送
+- 定时推送路由状态、在线设备列表、流量排行
+- Web / SSH 登录成功与失败提醒，自动拉黑、端口敲门
+- 无人值守任务：定时重启、断网重拨、设备别名与免打扰时段
 
-自动封禁启用后，黑名单默认拦截访问路由器的流量；可另外开启“阻止黑名单 IP 的转发流量”，拦截经过路由器转发的所有流量（包括访问端口映射的下级设备、局域网客户端访问互联网）。开启转发封禁且已安装 conntrack 时，封禁还会尝试清理该 IP 的连接跟踪记录，以断开已有的流量卸载连接；未安装时跳过该步骤，新连接仍按黑名单规则拦截。关闭该选项或关闭自动封禁后，转发拦截规则会在下一次检测循环中被移除；与访问路由器的拦截规则一样，停止插件服务不会立即移除已生效的规则，它们会在防火墙重载或重启后消失，并在插件运行时于下一次检测循环中恢复。fw4 定时封禁按最近记录的剩余时长恢复。黑名单时间设置为 `0` 时永久封禁，手动清除黑名单后解除。
+## 支持的通知渠道
 
-通知服务支持列表：
-| 推送应用 | 方式 | 接口说明 |
-| :-------- | :----- | :----- |
-| 微信 | Server酱 | https://sct.ftqq.com/
-| 微信 | 推送加 | http://www.pushplus.plus/
-| 微信等 | WPUSH | https://wpush.cn/
-| 微信 | WxPusher | https://wxpusher.zjiecode.com/docs
-| 企业微信 | 应用推送 | https://work.weixin.qq.com/api/doc/90000/90135/90248
-| Telegram | bot | https://t.me/BotFather
-| Mail | msmtp | https://marlam.de/msmtp/
+| 渠道 | 接口 |
+| --- | --- |
+| 微信 | Server酱、推送加、WPUSH、WxPusher |
+| 企业微信 | 应用消息（支持 text / markdown / mpnews） |
+| Telegram | Bot API |
+| 邮件 | msmtp |
+| 自定义 | 自定义 API JSON 模板 |
 
-精力有限，如需要钉钉推送、飞书推送、Bark 推送等请尝试另一个分支 https://github.com/zzsj0928/luci-app-pushbot ，或使用自定义 API 设置
+## 安装
 
-v2.06.2 之后的版本不再支持 LuCI 18.06，如需编译，请使用 openwrt-18.06 分支，拉取源码时请使用 `git clone -b openwrt-18.06 https://github.com/tty228/luci-app-wechatpush.git` 命令
+Release 同时提供两种包格式：
 
-## 说明
+| 文件 | 适用系统 |
+| --- | --- |
+| `luci-app-wechatpush-pro_1.1-1_all.ipk` | OpenWrt 19.07 – 24.10（opkg） |
+| `luci-app-wechatpush-pro-1.1-r1.apk` | OpenWrt 25.12+（apk） |
+| `luci-i18n-wechatpush-pro-zh-cn_1.1-1_all.ipk` / `.apk` | 简体中文语言包 |
 
-**关于安装：**
+```sh
+# opkg
+opkg update
+opkg install luci-app-wechatpush-pro_1.1-1_all.ipk
+opkg install luci-i18n-wechatpush-pro-zh-cn_1.1-1_all.ipk
 
-插件依赖 iputils-arping + curl + jq + bash，对于内存有限的路由器，请酌情安装，**在安装之前，请先运行 `opkg update` 命令，以便在安装过程中安装依赖。**
+# apk
+apk add --allow-untrusted luci-app-wechatpush-pro-1.1-r1.apk
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.1-r1.apk
+```
 
-基于 X86 OpenWrt v23.05.0 制作，不同系统不同设备，可能会遇到各种问题，**如获取到错误的温度信息、页面显示错误、报错等，自行适配**
+基础依赖：`iputils-arping`、`curl`、`jq`、`bash`、`luci-lua-runtime`。
+编译期可选依赖：wrtbwmon（仅使用 wrtbwmon 流量源时需要）、lsblk / smartmontools（磁盘信息）、openssh-client / openssh-keygen（宿主机信息）。
 
-**关于主机名：**
+安装后在 LuCI 中进入 **服务 → 微信推送-pro**。
 
-对于设备未宣告主机名、光猫拨号上网、OpenWrt 作为旁路网关等各类情况导致的获取主机名失败，可以通过以下方式设置主机名
+## 流量数据来源
 
-- 使用设备名备注
-- 在高级设置处配置从光猫、小米路由器、ROS 获取
-- 开启 MAC 设备数据库
-- 安装 samba*-server 或 samba*-client，使程序可以通过 NetBIOS 查询主机名
+在 **基本设置 → 流量数据来源** 中选择，页面会按来源显示专属设置项。
 
+### ctstat（默认，推荐）
 
-**关于设备在线状态：**
+通过 ubus 调用 `luci.ctstat.get_stats`，读取 ctstat 守护进程按客户端统计的累计下载 / 上传字节数。
 
-默认使用 ping/arping 来主动探测设备在线状态，以对抗 Wi-Fi 休眠机制，主动探测较为耗时但可以获得较为精准的设备在线状态
+- 需要安装并运行 `luci-app-ctstat`。
+- 工作在 conntrack / nftables 上，不创建 iptables 规则，可与 firewall4 共存。
+- 在线设备页表格按客户端显示“总下载”和“总上传”；定时推送的设备列表中“总流量”为该设备的下载 + 上传之和。
+- 数据为 ctstat 启动以来的累计值；ctstat 重启或执行 reset 后会重新计数。
+- ctstat 将无 MAC 的客户端以 IP 作为键，插件同时按 MAC / IP 匹配，避免设备页丢失流量列。
 
-- 如遇设备休眠频繁，请在高级设置处自行调整超时设置
-- 如果不需要太过精准的设备在线信息，只需要其余功能，可以在高级设置中关闭主动探测
+专属设置：**ctstat RPC 超时（秒）**（默认 5，范围 1–30）。路由器较慢时可增大；调用失败时保留上一份成功快照，不会把流量清零。
 
-**关于流量统计信息：**
+### wrtbwmon（原版行为）
 
-本分支支持两种流量数据来源，可在「基本设置 → 流量数据来源」中选择：
+使用 wrtbwmon 生成的 `usage.db`。该方式通过 iptables 建链计数，可能与 Routing/NAT、Flow Offloading、代理插件冲突，并在 firewall4 上产生旧版 iptables 规则警告。
 
-1. **wrtbwmon**：原版行为，依赖 wrtbwmon，通过 iptables 建链计数。**该插件与 Routing/NAT、Flow Offloading、代理上网等插件冲突，且会在 firewall4/nftables 系统中产生「旧版 iptables 规则」警告。**
-2. **OAF / OpenAppFilter（推荐用于 nftables 系统）**：通过 `ubus call fwx common` 的 `get_user_stat` 读取**全部设备**的 `m`(MAC)/`uf`(上传)/`df`(下载)，**不创建任何 iptables 规则，可与 firewall4/nftables 共存**。需已安装并启用 `luci-app-oaf` / `open-app-filter`（OAF 的流量统计需开启）。
+专属设置：**wrtbwmon 兼容模式**。
 
-   **口径说明（重要）**：OAF 的按设备流量是**当天累计、每天零点自动归零**，与本插件「每天零点重置」选项吻合。OAF 界面那个「近 30 天」图表是**所有设备合计的全局流量**（`get_history_traffic_stats`），不区分单台设备；而按设备的历史明细 OAF 虽有存盘但未通过 ubus 暴露（源码里 `load_history_stat_from_file()` 是空实现），因此**无法直接推送单台设备的跨天流量**——需要开启下面的「跨天累计」。旧版 OAF 若无 `get_user_stat`，会自动回退到 `get_daily_top_users`（该接口只返回流量最高的 8 台）。
+- 自动：按软件包版本选择命令格式
+- 新版：`wrtbwmon -f`（1.2.0+）
+- 旧版：`wrtbwmon update`（1.0.x）
 
-   **精度前提（必读）**：OAF 的计数钩子挂在 netfilter 的 `NF_INET_FORWARD` 上，**一旦开启软件/硬件流量卸载（flow offloading、HNAT、ECM、PPE 等），被卸载的连接会绕过该钩子，单设备流量会显著少计甚至只统计到每条连接的前几个包**。若发现 OAF 的数字远小于实际，请用 `nft list flowtable inet fw4`、`/proc/net/dev` 对比核对；OAF 自带 `fwx.advanced.disable_hnat=1` 可关闭部分平台的卸载（代价是吞吐/CPU）。
-3. **自动**：已安装 wrtbwmon 时用 wrtbwmon，否则用 OAF（新装默认值）。
+### OAF / OpenAppFilter
 
-选择 OAF 时，编译期无需勾选 `Enable Traffic Monitoring (wrtbwmon)`，避免把 wrtbwmon 编进固件。运行时插件会自动检测 ubus 上的 `fwx` 对象判断 OAF 是否可用；显式选择 OAF 时即使开机瞬间 `fwx` 还没注册，也会在之后每个周期自动重试，不会退回 wrtbwmon。
+通过 `ubus call fwx common` 读取每客户端流量，不创建 iptables 规则。需要已安装并启用 `open-app-filter` / `luci-app-oaf` 且开启其流量统计。
 
-**跨天累计总流量（OAF 专用）**：选 OAF 时默认显示当天流量（零点归零）。若希望像 wrtbwmon 那样显示**累计总流量**，勾选「跨天累计总流量」选项：wechatpush 会自行维护一个累计基线（存于 `/usr/share/wechatpush/usage_accum.db`，重启不丢），每次刷新检测到当天值比上次小（即零点归零或 OAF 重启）时，把上一天的流量并入基线，展示值 = 基线 + 当天值。精度取决于刷新间隔（默认 60 秒）。注意：
+专属设置：
 
-- 开启累计后请**关闭**「每天零点重置流量数据」，否则零点会删除显示用的 `usage.db`（不影响基线，但会造成显示瞬断）。
-- wrtbwmon 自身即累计，此选项对其无效果。
-- 想重新从零累计，停止服务后删除 `/usr/share/wechatpush/usage_accum.db` 即可。
-- 基线文件每个刷新周期都会写一次（默认每天 1440 次），介意闪存写入的设备可把 `sleeptime` 调大。
+- **OAF ubus 接口**：自动 / `get_user_stat`（全部设备）/ `get_daily_top_users`（仅流量最高的 8 台）。
+- **跨天累计总流量**：OAF 每天零点归零，插件维护本地基线，把上一日流量并入累计值；开启时建议关闭“每天零点重置流量数据”。
+- 若开启软件 / 硬件流量卸载，OAF 的 netfilter 钩子可能被绕过，设备流量会明显偏少；此时建议改用 ctstat。
 
-> 说明：OAF 数据源通过标准 ubus 接口只读获取流量数据，不修改 OAF 本身；若 OAF 某次调用失败，本次跳过更新并**保留上一份 `usage.db`**，不会清空数据。只有 `traffic_source=auto` 时才允许回退到 wrtbwmon——显式选 OAF 时不会混用两种口径（否则两套累计值来回跳变会误触发「设备异常流量」推送）。
+## 使用提示
 
-**关于硬盘信息：**
+- 设备主机名获取失败时，可在“设备别名”中按 MAC 或 IP 指定名称，也可安装 Samba 客户端以使用 NetBIOS 查询。
+- 默认用 ping / arping 主动探测设备在线状态；Wi-Fi 休眠设备可在高级设置中调整超时或关闭主动探测。
+- 自动封禁默认只拦截访问路由器的流量；打开“阻止黑名单 IP 的转发流量”后可拦截经过路由器的流量。fw4 下按最近记录的剩余时长恢复封禁。
+- 停止插件服务不会立即撤销已生效的防火墙规则，规则会在防火墙重载或重启后消失；插件运行时会在下一次检测循环恢复。
 
-当 OpenWrt 系统或远程主机（PVE）未安装 lsblk 时，硬盘容量信息可能与实际不一致
+## 排查问题
 
-当 OpenWrt 系统或远程主机（PVE）未安装 smartctl 时，硬盘温度、通电时间、健康度等信息不可用
+提交问题时请附上：
 
-**关于 bug 提交：**
+- 设备型号、OpenWrt 版本、插件版本与所选流量来源
+- `/usr/share/wechatpush/wechatpush` 的直接输出
+- `/tmp/wechatpush/wechatpush.log` 与 `/tmp/wechatpush/usage.db`
+- `bash -x /usr/share/wechatpush/wechatpush t1` 的详细日志
 
-提交 bug 时请尽量带上以下信息
+常见检查：
 
-- 设备信息及插件版本号
-- 执行 `/usr/share/wechatpush/wechatpush` 后的提示信息
-- 报错后的日志信息、`/tmp/wechatpush/` 目录下的文件信息
-- `bash -x /usr/share/wechatpush/wechatpush t1` 的详细运行信息
+```sh
+ubus list | grep -E 'luci\.ctstat|fwx'
+ubus call luci.ctstat get_stats '{}' | jq '.devices | length'
+cat /tmp/wechatpush/usage.db
+/etc/init.d/wechatpush restart
+```
 
+## 许可
 
-## 下载
-
-| 支持的 OpenWrt 版本 | 下载地址 |
-| :-------- | :----- |
-| openwrt-19.07.0 ... latest | [![Lastest Release](https://img.shields.io/github/release/tty228/luci-app-wechatpush.svg?style=flat)](https://github.com/tty228/luci-app-wechatpush/releases)
-| openwrt-18.06 | [![Release v2.06.2](https://img.shields.io/badge/release-v2.06.2-lightgrey.svg)](https://github.com/tty228/luci-app-wechatpush/releases/tag/v2.06.2)
-
-
-## 捐赠
-
-如果你觉得此项目对你有帮助，请捐助我们，使项目能持续发展和更加完善。
-
-![image](https://github.com/tty228/luci-app-wechatpush/blob/master/.github/others/20260303202537_34_664.png)
+GPL-2.0-or-later。上游项目由 tty228 维护，本分支仅做功能定制与打包维护。
