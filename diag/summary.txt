@@ -1,0 +1,108 @@
+===== .config 相关项 =====
+53:CONFIG_TARGET_x86=y
+54:CONFIG_TARGET_x86_64=y
+55:CONFIG_TARGET_MULTI_PROFILE=y
+56:CONFIG_TARGET_ALL_PROFILES=y
+57:CONFIG_TARGET_PER_DEVICE_ROOTFS=y
+58:CONFIG_TARGET_DEVICE_x86_64_DEVICE_generic=y
+59:CONFIG_TARGET_DEVICE_PACKAGES_x86_64_DEVICE_generic=""
+62:CONFIG_TARGET_BOARD="x86"
+63:CONFIG_TARGET_SUBTARGET="64"
+64:CONFIG_TARGET_ARCH_PACKAGES="x86_64"
+156:CONFIG_TARGET_ROOTFS_TARGZ=y
+157:CONFIG_TARGET_ROOTFS_EXT4FS=y
+158:CONFIG_TARGET_EXT4_RESERVED_PCT=0
+159:CONFIG_TARGET_EXT4_BLOCKSIZE_4K=y
+160:CONFIG_TARGET_EXT4_BLOCKSIZE=4096
+161:CONFIG_TARGET_EXT4_JOURNAL=y
+162:CONFIG_TARGET_ROOTFS_SQUASHFS=y
+163:CONFIG_TARGET_SQUASHFS_BLOCK_SIZE=256
+164:CONFIG_TARGET_UBIFS_FREE_SPACE_FIXUP=y
+165:CONFIG_TARGET_UBIFS_JOURNAL_SIZE=""
+178:CONFIG_TARGET_SERIAL="ttyS0"
+179:CONFIG_TARGET_IMAGES_GZIP=y
+180:CONFIG_TARGET_KERNEL_PARTSIZE=16
+181:CONFIG_TARGET_ROOTFS_PARTSIZE=104
+182:CONFIG_TARGET_ROOTFS_PARTNAME=""
+381:CONFIG_TARGET_ROOTFS_DIR=""
+387:CONFIG_TARGET_OPTIMIZATION="-Os -pipe"
+410:CONFIG_TARGET_SUFFIX="musl"
+418:CONFIG_TARGET_PREINIT_SUPPRESS_STDERR=y
+419:CONFIG_TARGET_PREINIT_TIMEOUT=4
+420:CONFIG_TARGET_PREINIT_IFNAME=""
+421:CONFIG_TARGET_PREINIT_IP="192.168.1.1"
+422:CONFIG_TARGET_PREINIT_NETMASK="255.255.255.0"
+423:CONFIG_TARGET_PREINIT_BROADCAST="192.168.1.255"
+425:CONFIG_TARGET_INIT_PATH="/usr/sbin:/usr/bin:/sbin:/bin"
+426:CONFIG_TARGET_INIT_ENV=""
+427:CONFIG_TARGET_INIT_CMD="/sbin/init"
+428:CONFIG_TARGET_INIT_SUPPRESS_STDERR=y
+2953:# CONFIG_LUCI_LANG_ar is not set
+2954:# CONFIG_LUCI_LANG_bg is not set
+2955:# CONFIG_LUCI_LANG_bn_BD is not set
+2956:# CONFIG_LUCI_LANG_ca is not set
+2957:# CONFIG_LUCI_LANG_cs is not set
+2958:# CONFIG_LUCI_LANG_da is not set
+2959:# CONFIG_LUCI_LANG_de is not set
+2960:# CONFIG_LUCI_LANG_el is not set
+2961:# CONFIG_LUCI_LANG_es is not set
+2962:# CONFIG_LUCI_LANG_fa is not set
+2963:# CONFIG_LUCI_LANG_fi is not set
+2964:# CONFIG_LUCI_LANG_fil is not set
+2965:# CONFIG_LUCI_LANG_fr is not set
+2966:# CONFIG_LUCI_LANG_he is not set
+2967:# CONFIG_LUCI_LANG_hi is not set
+2968:# CONFIG_LUCI_LANG_hu is not set
+2969:# CONFIG_LUCI_LANG_it is not set
+2970:# CONFIG_LUCI_LANG_ja is not set
+2971:# CONFIG_LUCI_LANG_ko is not set
+2972:# CONFIG_LUCI_LANG_lt is not set
+2973:# CONFIG_LUCI_LANG_mr is not set
+2974:# CONFIG_LUCI_LANG_ms is not set
+2975:# CONFIG_LUCI_LANG_nb_NO is not set
+2976:# CONFIG_LUCI_LANG_nl is not set
+2977:# CONFIG_LUCI_LANG_pl is not set
+2978:# CONFIG_LUCI_LANG_pt is not set
+2979:# CONFIG_LUCI_LANG_pt_BR is not set
+2980:# CONFIG_LUCI_LANG_ro is not set
+2981:# CONFIG_LUCI_LANG_ru is not set
+2982:# CONFIG_LUCI_LANG_sk is not set
+2983:# CONFIG_LUCI_LANG_sv is not set
+2984:# CONFIG_LUCI_LANG_tr is not set
+2985:# CONFIG_LUCI_LANG_uk is not set
+2986:# CONFIG_LUCI_LANG_vi is not set
+2987:# CONFIG_LUCI_LANG_yua is not set
+2988:CONFIG_LUCI_LANG_zh_Hans=y
+2989:CONFIG_LUCI_LANG_zh_Hant=y
+3108:# CONFIG_TARGET_DEFAULT_LAN_IP_FROM_PREINIT is not set
+3109:# CONFIG_TARGET_PREINIT_DISABLE_FAILSAFE is not set
+3110:# CONFIG_TARGET_PREINIT_SHOW_NETMSG is not set
+3111:# CONFIG_TARGET_PREINIT_SUPPRESS_FAILSAFE_NETMSG is not set
+6447:CONFIG_PACKAGE_luci-lua-runtime=m
+6556:CONFIG_PACKAGE_luci-app-wechatpush-pro=m
+6557:# CONFIG_PACKAGE_luci-app-wechatpush-pro_Enable_Traffic_Monitoring is not set
+6558:# CONFIG_PACKAGE_luci-app-wechatpush-pro_Enable_OAF_Traffic is not set
+6559:# CONFIG_PACKAGE_luci-app-wechatpush-pro_Enable_Local_Disk_Information_Detection is not set
+6560:# CONFIG_PACKAGE_luci-app-wechatpush-pro_Enable_Host_Information_Detection is not set
+9610:CONFIG_PACKAGE_luci-i18n-wechatpush-pro-zh-cn=m
+9611:CONFIG_PACKAGE_luci-i18n-wechatpush-pro-zh-tw=m
+
+===== logs 目录文件 =====
+
+===== package 目录 =====
+total 252872
+drwxr-xr-x 7 runner runner      4096 Nov 24 10:20 .
+drwxr-xr-x 6 runner runner      4096 Nov 24 10:24 ..
+drwxr-xr-x 7 runner runner      4096 Nov 24 10:18 .git
+-rw-r--r-- 1 runner runner       271 Nov 24 10:18 .gitattributes
+drwxr-xr-x 5 runner runner      4096 Nov 24 10:18 .github
+-rw-r--r-- 1 runner runner     18092 Nov 24 10:18 LICENSE
+-rw-r--r-- 1 runner runner      4758 Nov 24 10:18 Makefile
+-rw-r--r-- 1 runner runner      7301 Nov 24 10:18 README.md
+-rw-r--r-- 1 runner runner      7599 Nov 24 10:18 README_en.md
+drwxr-xr-x 3 runner runner      4096 Nov 24 10:18 htdocs
+-rw-r--r-- 1 runner runner 258855960 Feb  4  2025 openwrt-sdk-24.10.0-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+drwxr-xr-x 4 runner runner      4096 Nov 24 10:18 po
+drwxr-xr-x 4 runner runner      4096 Nov 24 10:18 root
+
+===== 关键错误行 =====
