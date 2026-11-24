@@ -29,22 +29,22 @@ Release 同时提供两种包格式：
 
 | 文件 | 适用系统 |
 | --- | --- |
-| `luci-app-wechatpush-pro_1.1-1_all.ipk` | OpenWrt 19.07 – 24.10（opkg） |
-| `luci-app-wechatpush-pro-1.1-r1.apk` | OpenWrt 25.12+（apk） |
-| `luci-i18n-wechatpush-pro-zh-cn_1.1-1_all.ipk` / `.apk` | 简体中文语言包 |
-| `luci-i18n-wechatpush-pro-zh-tw_1.1-1_all.ipk` / `.apk` | 繁體中文語言包 |
+| `luci-app-wechatpush-pro_1.1-r2_all.ipk` | OpenWrt 19.07 – 24.10（opkg） |
+| `luci-app-wechatpush-pro-1.1-r2.apk` | OpenWrt 25.12+（apk） |
+| `luci-i18n-wechatpush-pro-zh-cn_1.1-r2_all.ipk` / `.apk` | 简体中文语言包 |
+| `luci-i18n-wechatpush-pro-zh-tw_1.1-r2_all.ipk` / `.apk` | 繁體中文語言包 |
 
 ```sh
 # opkg
 opkg update
-opkg install luci-app-wechatpush-pro_1.1-1_all.ipk
-opkg install luci-i18n-wechatpush-pro-zh-cn_1.1-1_all.ipk   # 简体（按需）
-opkg install luci-i18n-wechatpush-pro-zh-tw_1.1-1_all.ipk   # 繁体（按需）
+opkg install luci-app-wechatpush-pro_1.1-r2_all.ipk
+opkg install luci-i18n-wechatpush-pro-zh-cn_1.1-r2_all.ipk   # 简体（按需）
+opkg install luci-i18n-wechatpush-pro-zh-tw_1.1-r2_all.ipk   # 繁体（按需）
 
 # apk
-apk add --allow-untrusted luci-app-wechatpush-pro-1.1-r1.apk
-apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.1-r1.apk  # 简体（按需）
-apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.1-r1.apk  # 繁体（按需）
+apk add --allow-untrusted luci-app-wechatpush-pro-1.1-r2.apk
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.1-r2.apk  # 简体（按需）
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.1-r2.apk  # 繁体（按需）
 ```
 
 基础依赖：`iputils-arping`、`curl`、`jq`、`bash`、`luci-lua-runtime`。

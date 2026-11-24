@@ -1,15 +1,14 @@
 #!/bin/sh
 
-function get_config_wechatpush(){
-	while [[ "$*" != "" ]]; do
-		eval ${1}='`uci get wechatpush.config.$1`' 2>/dev/null
-		uci del wechatpush.config.$1 2>/dev/null
-		uci commit wechatpush
-		shift
-	done
-}
+# 兼容旧版：把顶层 chat_id 迁移到 config.tg_chat_id
+chat_id=$(uci -q get wechatpush.config.chat_id)
+if [ -n "$chat_id" ]; then
+	uci -q set wechatpush.config.tg_chat_id="$chat_id"
+	uci -q delete wechatpush.config.chat_id
+	uci -q commit wechatpush
+fi
 
-get_config_wechatpush "chat_id"
-[ -n "$chat_id" ] && uci set wechatpush.config.tg_chat_id="$chat_id"
+# 清理 LuCI 缓存，让新菜单立即生效
+rm -rf /tmp/luci-indexcache.* /tmp/luci-modulecache 2>/dev/null
 
-rm -rf /tmp/luci-* >/dev/null 2>&1
+exit 0

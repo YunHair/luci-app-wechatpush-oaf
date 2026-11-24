@@ -135,7 +135,8 @@ read_config() {
 	tempjsonpath="${dir}/temp.json"
 	ip_blacklist_path="/usr/share/wechatpush/api/ip_blacklist"
 	oui_base="${dir}/oui_base.txt"
-	[ -z "$debuglevel" ] && logfile="/dev/null" || logfile="${dir}/wechatpush.log"
+	[ -z "$debuglevel" ] && debuglevel=1
+	logfile="${dir}/wechatpush.log"
 	login_port_forward_list=$(echo "$login_port_forward_list" | sed 's/ /\n/g') 2>/dev/null
 	up_down_push_blacklist=$(echo "$up_down_push_blacklist" | sed 's/ /\n/g') 2>/dev/null
 	up_down_push_whitelist=$(echo "$up_down_push_whitelist" | sed 's/ /\n/g') 2>/dev/null
@@ -386,7 +387,8 @@ main() {
 					else
 						>"${dir}/temp_err"
 						get_config "debuglevel"
-						[ -z "$debuglevel" ] && logfile="/dev/null" || logfile="${dir}/wechatpush.log"
+						[ -z "$debuglevel" ] && debuglevel=1
+						logfile="${dir}/wechatpush.log"
 						log_change "[ERROR] $(translate "Failed to retrieve remote host temperature. To prevent SSH connection timeout from affecting program functionality, the temperature retrieval feature has been disabled. Please verify your configuration and restart the script, or manually delete /tmp/wechatpush/temp_err to retry.")"
 					fi
 				fi

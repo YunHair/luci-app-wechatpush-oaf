@@ -2,9 +2,9 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-wechatpush-pro
 # pro 分支：包名与 LuCI 应用名统一为 luci-app-wechatpush-pro。
-# apk (OpenWrt 25.12+) 的版本号只接受 数字[.数字]*[-r数字]，故实际包版本为 1.1-r1。
+# apk (OpenWrt 25.12+) 的版本号只接受 数字[.数字]*[-r数字]，故实际包版本为 1.1-r2。
 PKG_VERSION:=1.1
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_MAINTAINER:=tty228 <tty228@yeah.net>
 PKG_CONFIG_DEPENDS:= \
