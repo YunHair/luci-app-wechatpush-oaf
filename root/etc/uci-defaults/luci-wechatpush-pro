@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# 兼容旧版：把顶层 chat_id 迁移到 config.tg_chat_id
+chat_id=$(uci -q get wechatpush-pro.config.chat_id)
+if [ -n "$chat_id" ]; then
+	uci -q set wechatpush-pro.config.tg_chat_id="$chat_id"
+	uci -q delete wechatpush-pro.config.chat_id
+	uci -q commit wechatpush-pro
+fi
+
+# 清理 LuCI 缓存，让新菜单立即生效
+rm -rf /tmp/luci-indexcache.* /tmp/luci-modulecache 2>/dev/null
+
+exit 0

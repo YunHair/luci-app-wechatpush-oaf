@@ -11,11 +11,11 @@ var callServiceList = rpc.declare({
 });
 
 function getServiceStatus() {
-    return L.resolveDefault(callServiceList('wechatpush'), {}).then(function (res) {
+    return L.resolveDefault(callServiceList('wechatpush-pro'), {}).then(function (res) {
         console.log(res);
         var isRunning = false;
         try {
-            isRunning = res['wechatpush']['instances']['instance1']['running'];
+            isRunning = res['wechatpush-pro']['instances']['instance1']['running'];
         } catch (e) { }
         return isRunning;
     });
@@ -25,20 +25,20 @@ return view.extend({
     load: function () {
         return Promise.all([
             getServiceStatus(),
-            uci.load('wechatpush')
+            uci.load('wechatpush-pro')
         ]);
     },
 
     render: function (data) {
         var status = data[0];
         // 检查配置，默认为 '1' (开启)
-        var preferClient = uci.get('wechatpush', 'config', 'prefer_client_page') !== '0';
+        var preferClient = uci.get('wechatpush-pro', 'config', 'prefer_client_page') !== '0';
 
         // 如果服务正在运行 且 优先展示在线设备开关开启，跳转到 client 页面
         if (status && preferClient) {
-            window.location.replace('/cgi-bin/luci/admin/services/wechatpush/client');
+            window.location.replace('/cgi-bin/luci/admin/services/wechatpush-pro/client');
         } else {
-            window.location.replace('/cgi-bin/luci/admin/services/wechatpush/config');
+            window.location.replace('/cgi-bin/luci/admin/services/wechatpush-pro/config');
         }
     },
 

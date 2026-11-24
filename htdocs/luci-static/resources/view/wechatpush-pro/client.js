@@ -5,7 +5,7 @@
 'require poll';
 'require uci';
 
-// 解析 /tmp/wechatpush/usage.db（CSV 表头: no,ip,mac,in,out,total,used）
+// 解析 /tmp/wechatpush-pro/usage.db（CSV 表头: no,ip,mac,in,out,total,used）
 // in = 今日下载，out = 今日上传，total = 今日总计。文件不存在或为空时返回空映射。
 function parseUsageDb(raw) {
 	var map = {};
@@ -58,7 +58,7 @@ return view.extend({
 		// 清除 localStorage 中的排序设置
 		localStorage.removeItem('sortColumn');
 		localStorage.removeItem('sortDirection');
-		uci.load('wechatpush');
+		uci.load('wechatpush-pro');
 		return this.fetchAndRenderDevices().then(function () {
 			self.setupAutoRefresh();
 		});
@@ -75,8 +75,8 @@ return view.extend({
 	},
 
 	fetchDevices: function () {
-		var devices_path = '/tmp/wechatpush/devices.json';
-		var usage_path = '/tmp/wechatpush/usage.db';
+		var devices_path = '/tmp/wechatpush-pro/devices.json';
+		var usage_path = '/tmp/wechatpush-pro/usage.db';
 		return Promise.all([
 			fs.read(devices_path),
 			fs.read(usage_path).catch(function () { return ''; })
@@ -129,7 +129,7 @@ return view.extend({
 		var hasData = false;
 
 		// 获取配置中的默认排序列
-		var defaultSortColumn = uci.get('wechatpush', 'config', 'defaultSortColumn') || 'ip';
+		var defaultSortColumn = uci.get('wechatpush-pro', 'config', 'defaultSortColumn') || 'ip';
 		var defaultSortDirection = (defaultSortColumn === 'uptime') ? 'desc' : 'asc';
 
 		// 获取存储的排序设置，如果没有则使用默认设置

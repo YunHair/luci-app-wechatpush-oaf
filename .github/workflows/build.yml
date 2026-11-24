@@ -315,7 +315,7 @@ jobs:
           cd "${{ env.SDK_DIR }}"
           {
             echo "===== .config 相关项 ====="
-            grep -nE "wechatpush|lua-runtime|LUCI_LANG|CONFIG_TARGET" .config 2>/dev/null
+            grep -nE "wechatpush-pro|lua-runtime|LUCI_LANG|CONFIG_TARGET" .config 2>/dev/null
             echo
             echo "===== logs 目录文件 ====="
             find logs -type f 2>/dev/null | head -60

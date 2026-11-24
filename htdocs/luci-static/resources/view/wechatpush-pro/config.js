@@ -18,11 +18,11 @@ var callServiceList = rpc.declare({
 });
 
 function getServiceStatus() {
-	return L.resolveDefault(callServiceList('wechatpush'), {}).then(function (res) {
+	return L.resolveDefault(callServiceList('wechatpush-pro'), {}).then(function (res) {
 		console.log(res);
 		var isRunning = false;
 		try {
-			isRunning = res['wechatpush']['instances']['instance1']['running'];
+			isRunning = res['wechatpush-pro']['instances']['instance1']['running'];
 		} catch (e) { }
 		return isRunning;
 	});
@@ -32,9 +32,9 @@ function renderStatus(isRunning) {
 	var spanTemp = '<em><span style="color:%s"><strong>%s %s</strong></span></em>';
 	var renderHTML;
 	if (isRunning) {
-		renderHTML = String.format(spanTemp, 'green', _('wechatpush'), _('RUNNING'));
+		renderHTML = String.format(spanTemp, 'green', _('wechatpush-pro'), _('RUNNING'));
 	} else {
-		renderHTML = String.format(spanTemp, 'red', _('wechatpush'), _('NOT RUNNING'));
+		renderHTML = String.format(spanTemp, 'red', _('wechatpush-pro'), _('NOT RUNNING'));
 	}
 
 	return renderHTML;
@@ -96,9 +96,9 @@ return view.extend({
 	renderForwards: function (data) {
 		var hosts = data[0],
 			m, s, o,
-			programPath = '/usr/share/wechatpush/wechatpush';
+			programPath = '/usr/share/wechatpush-pro/wechatpush-pro';
 
-		m = new form.Map('wechatpush', _('WeChat push'), _('A tool that can push device messages from OpenWrt to a mobile phone via WeChat or Telegram.<br /><br />If you encounter any issues while using it, please submit them here:') + '<a href="https://github.com/tty228/luci-app-wechatpush" target="_blank">' + _('GitHub Project Address') + '</a>');
+		m = new form.Map('wechatpush-pro', _('WeChat push'), _('A tool that can push device messages from OpenWrt to a mobile phone via WeChat or Telegram.<br /><br />If you encounter any issues while using it, please submit them here:') + '<a href="https://github.com/tty228/luci-app-wechatpush-pro" target="_blank">' + _('GitHub Project Address') + '</a>');
 
 		s = m.section(form.TypedSection);
 		s.anonymous = true;
@@ -119,7 +119,7 @@ return view.extend({
 			]);
 		}
 
-		s = m.section(form.NamedSection, 'config', 'wechatpush', _(''));
+		s = m.section(form.NamedSection, 'config', 'wechatpush-pro', _(''));
 		s.tab('basic', _('Basic Settings'));
 		s.tab('content', _('Push Content'));
 		s.tab('ipset', _('Auto Ban'));
@@ -134,137 +134,137 @@ return view.extend({
 		o = s.taboption('basic', cbiRichListValue, 'jsonpath', _('Push Mode'));
 		o.value('', _('Close'),
 			_('Do not use push notifications, only use other features.'));
-		o.value('/usr/share/wechatpush/api/serverchan.json', _('WeChat serverchan'),
+		o.value('/usr/share/wechatpush-pro/api/serverchan.json', _('WeChat serverchan'),
 			_('Using serverchan API, simple configuration, supports multiple push methods'));
-		o.value('/usr/share/wechatpush/api/serverchan3.json', _('Serverchan3 APP'),
+		o.value('/usr/share/wechatpush-pro/api/serverchan3.json', _('Serverchan3 APP'),
 			_('Using serverchan3 API, simple configuration, support push to ServerChan App'));
-		o.value('/usr/share/wechatpush/api/qywx_mpnews.json', _('WeChat Work Image Message'),
+		o.value('/usr/share/wechatpush-pro/api/qywx_mpnews.json', _('WeChat Work Image Message'),
 			_('Using WeChat Work application message, more complex configuration, and starting from June 20, 2022, additional configuration for trusted IP is required. Trusted IP cannot be shared. This channel is no longer recommended.'));
-		o.value('/usr/share/wechatpush/api/qywx_markdown.json', _('WeChat Work Markdown Version'),
+		o.value('/usr/share/wechatpush-pro/api/qywx_markdown.json', _('WeChat Work Markdown Version'),
 			_('WeChat Work application message in plain text format, no need to click the title to view the content, same as above'));
-		o.value('/usr/share/wechatpush/api/wxpusher.json', _('wxpusher'),
+		o.value('/usr/share/wechatpush-pro/api/wxpusher.json', _('wxpusher'),
 			_('Another channel for WeChat push, the configuration is relatively simple, and only supports official accounts'));
-		o.value('/usr/share/wechatpush/api/pushplus.json', _('pushplus'),
+		o.value('/usr/share/wechatpush-pro/api/pushplus.json', _('pushplus'),
 			_('Another channel for WeChat push, the configuration is relatively simple, and it supports multiple push methods'));
-		o.value('/usr/share/wechatpush/api/wpush.json', _('WPUSH'),
+		o.value('/usr/share/wechatpush-pro/api/wpush.json', _('WPUSH'),
 			_('Multi-channel push via WPUSH (WeChat, App, Feishu, DingTalk, and more). Success when response code===0'));
-		o.value('/usr/share/wechatpush/api/telegram.json', _('Telegram'),
+		o.value('/usr/share/wechatpush-pro/api/telegram.json', _('Telegram'),
 			_('Telegram Bot Push'));
-		o.value('/usr/share/wechatpush/api/msmtp.json', _('msmtp'),
+		o.value('/usr/share/wechatpush-pro/api/msmtp.json', _('msmtp'),
 			_('To send emails using msmtp, you can manually install msmtp and configure `/etc/msmtprc`, or configure the SMTP service here to override the default msmtp configuration file.'));
-		o.value('/usr/share/wechatpush/api/diy.json', _('Custom Push'),
+		o.value('/usr/share/wechatpush-pro/api/diy.json', _('Custom Push'),
 			_('By modifying the JSON file, you can use a custom API'));
 
-		o = s.taboption('basic', form.Value, 'sckey', _('「wechatpush」sendkey'));
+		o = s.taboption('basic', form.Value, 'sckey', _('「wechatpush-pro」sendkey'));
 		o.description = _('Get Instructions') + ' <a href="https://sct.ftqq.com/r/13285" target="_blank">' + _('Click here') + '</a>';
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/serverchan.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/serverchan.json');
 
 		o = s.taboption('basic', form.Value, 'sc3key', _('「Serverchan3」sendkey'));
 		o.description = _('Get Instructions') + ' <a href="https://sc3.ft07.com/" target="_blank">' + _('Click here') + '</a>';
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/serverchan3.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/serverchan3.json');
 
 		o = s.taboption('basic', form.Value, 'sc3uid', _('「Serverchan3」uid'));
 		o.description = _('ServerChan3 uid');
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/serverchan3.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/serverchan3.json');
 
 		o = s.taboption('basic', form.Value, 'sc3tags', _('「Serverchan3」tags'));
 		o.description = _('ServerChan3 message tags, split with |');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/serverchan3.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/serverchan3.json');
 
 		o = s.taboption('basic', form.Value, 'corpid', _('corpid'));
 		o.description = _('Get Instructions') + ' <a href="https://work.weixin.qq.com/api/doc/10013" target="_blank">' + _('Click here') + '</a>';
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_mpnews.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_markdown.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_mpnews.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_markdown.json');
 
 		o = s.taboption('basic', form.Value, 'userid', _('userid'));
 		o.rmempty = false;
 		o.description = _('Send to All App Users, enter @all');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_mpnews.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_markdown.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_mpnews.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_markdown.json');
 
 		o = s.taboption('basic', form.Value, 'agentid', _('agentid'));
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_mpnews.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_markdown.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_mpnews.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_markdown.json');
 
 		o = s.taboption('basic', form.Value, 'corpsecret', _('Secret'));
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_mpnews.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_markdown.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_mpnews.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_markdown.json');
 
 		o = s.taboption('basic', form.Value, 'mediapath', _('Thumbnail Image File Path'))
 		o.rmempty = false;
-		o.default = '/usr/share/wechatpush/api/logo.jpg';
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_mpnews.json');
+		o.default = '/usr/share/wechatpush-pro/api/logo.jpg';
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_mpnews.json');
 		o.description = _('Supports JPG and PNG formats within 2MB <br> Optimal size: 900383 or 2.35:1');
 
 		o = s.taboption('basic', form.Value, 'proxy_ip', _('Trusted IP address'));
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_mpnews.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_markdown.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_mpnews.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_markdown.json');
 		o.description = _('If the application was created after June 20, 2022, you need to set the trusted IP. This option should be used in conjunction with a proxy server.');
 
 		o = s.taboption('basic', form.Value, 'wxpusher_apptoken', _('appToken'));
 		o.description = _('Get Instructions') + ' <a href="https://wxpusher.zjiecode.com/docs/#/?id=%e5%bf%ab%e9%80%9f%e6%8e%a5%e5%85%a5" target="_blank">' + _('Click here') + '</a>';
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/wxpusher.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/wxpusher.json');
 
 		o = s.taboption('basic', form.Value, 'wxpusher_uids', _('uids'));
-		o.depends('jsonpath', '/usr/share/wechatpush/api/wxpusher.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/wxpusher.json');
 
 		o = s.taboption('basic', form.Value, 'wxpusher_topicIds', _('topicIds(Mass sending)'));
 		o.description = _('Get Instructions') + ' <a href="https://wxpusher.zjiecode.com/docs/#/?id=%e5%8f%91%e9%80%81%e6%b6%88%e6%81%af-1" target="_blank">' + _('Click here') + '</a>';
-		o.depends('jsonpath', '/usr/share/wechatpush/api/wxpusher.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/wxpusher.json');
 
 		o = s.taboption('basic', form.Value, 'pushplus_token', _('pushplus_token'));
 		o.description = _('Get Instructions') + ' <a href="http://www.pushplus.plus/" target="_blank">' + _('Click here') + '</a>';
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/pushplus.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/pushplus.json');
 
 		o = s.taboption('basic', form.Value, 'wpush_apikey', _('WPUSH apikey'));
 		o.description = _('Get Instructions') + ' <a href="https://wpush.cn/" target="_blank">' + _('Click here') + '</a>' + _('<br />API docs: https://docs.wpush.cn/docs/api/message.html — success when code===0');
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/wpush.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/wpush.json');
 
 		o = s.taboption('basic', form.Value, 'tg_token', _('Bot Token'));
 		o.description = _('Get Bot') + ' <a href="https://t.me/BotFather" target="_blank">' + _('Click here') + '</a>' + _('<br />Send a message to the created bot to initiate a conversation.');
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/telegram.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/telegram.json');
 
 		o = s.taboption('basic', form.Value, 'tg_chat_id', _('Chat ID'));
 		o.description = _('Get chat_id') + ' <a href="https://t.me/getuserIDbot" target="_blank">' + _('Click here') + '</a>' + _('<br />If you want to send to a group/channel, please create a non-Chinese group/channel (for easier chatid lookup, you can rename it later).<br />Add the bot to the group, send a message, and use https://api.telegram.org/bot token /getUpdates to obtain the chatid.');
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/telegram.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/telegram.json');
 
 		o = s.taboption('basic', form.Value, 'tg_thread_id', _('Message Thread ID'));
 		o.description = _('Optional: specify a thread (topic) ID for forum-style Telegram chats.');
 		o.rmempty = false;
 		o.optional = true;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/telegram.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/telegram.json');
 
 		o = s.taboption('basic', form.Value, 'tg_api_server', _('API Server URL'));
 		o.placeholder = 'https://api.telegram.org';
 		o.rmempty = false;
-		o.depends('jsonpath', '/usr/share/wechatpush/api/telegram.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/telegram.json');
 
 		o = s.taboption('basic', form.Value, 'recipient_email', _('Recipient Email Address'));
-		o.depends('jsonpath', '/usr/share/wechatpush/api/msmtp.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/msmtp.json');
 		o.rmempty = false;
 		o.description = _('opkg update<br />opkg install msmtp');
 
 		o = s.taboption('basic', form.Value, 'smtp_host', _('SMTP Host'));
-		o.depends('jsonpath', '/usr/share/wechatpush/api/msmtp.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/msmtp.json');
 		o.placeholder = "mail.oursite.example";
 
 		o = s.taboption('basic', form.Value, 'smtp_port', _('SMTP Port'));
-		o.depends('jsonpath', '/usr/share/wechatpush/api/msmtp.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/msmtp.json');
 		o.placeholder = "25";
 
 		o = s.taboption('basic', form.ListValue, 'smtp_tls', _('Enable/Disable TLS'));
-		o.depends('jsonpath', '/usr/share/wechatpush/api/msmtp.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/msmtp.json');
 		o.widget = 'radio';
 		o.value('on', _('Enable'));
 		o.value('off', _('Disable'));
@@ -272,7 +272,7 @@ return view.extend({
 		o.default = '';
 
 		o = s.taboption('basic', form.ListValue, 'smtp_starttls', _('Enable/Disable STARTTLS'));
-		o.depends('jsonpath', '/usr/share/wechatpush/api/msmtp.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/msmtp.json');
 		o.widget = 'radio';
 		o.value('on', _('Enable'));
 		o.value('off', _('Disable'));
@@ -280,47 +280,47 @@ return view.extend({
 		o.default = '';
 
 		o = s.taboption('basic', form.Value, 'smtp_user', _('User'));
-		o.depends('jsonpath', '/usr/share/wechatpush/api/msmtp.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/msmtp.json');
 
 		o = s.taboption('basic', form.Value, 'smtp_passwordeval', _('Password Command'));
-		o.depends('jsonpath', '/usr/share/wechatpush/api/msmtp.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/msmtp.json');
 		o.description = _('Set the password for authentication to the output (stdout) of the command.');
 
 		o = s.taboption('basic', form.Value, 'smtp_from', _('From Address'));
-		o.depends('jsonpath', '/usr/share/wechatpush/api/msmtp.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/msmtp.json');
 		o.placeholder = "user@oursite.example";
 
 		o = s.taboption('basic', form.Value, 'smtp_from_full_name', _('From Full Name'));
-		o.depends('jsonpath', '/usr/share/wechatpush/api/msmtp.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/msmtp.json');
 		o.description = _('If set, it is usually displayed as a nickname of the sender in email clients.');
 
 		o = s.taboption('basic', form.TextValue, 'diy_json', _('Custom Push'));
 		o.rows = 28;
 		o.wrap = 'oft';
 		o.cfgvalue = function (section_id) {
-			return fs.trimmed('/usr/share/wechatpush/api/diy.json');
+			return fs.trimmed('/usr/share/wechatpush-pro/api/diy.json');
 		};
 		o.write = function (section_id, formvalue) {
 			return this.cfgvalue(section_id).then(function (value) {
 				if (value == formvalue) {
 					return
 				}
-				return fs.write('/usr/share/wechatpush/api/diy.json', formvalue.trim().replace(/\r\n/g, '\n') + '\n');
+				return fs.write('/usr/share/wechatpush-pro/api/diy.json', formvalue.trim().replace(/\r\n/g, '\n') + '\n');
 			});
 		};
 		o.description = _('Please refer to the comments and other interface files for modifications. Limited resources, no longer supporting more interfaces, please debug on your own.<br />You can use a similar website to check the JSON file format: https://www.google.com/search?q=JSON+Parser+Online<br />Please use the 「Save」 button in the text box.');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/diy.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/diy.json');
 
 		o = s.taboption('basic', form.Value, 'proxy_address', _('Proxy Address'));
 		o.description = _('When you want to use a proxy to push information, you can use this option.<br/>This may be helpful for scenarios like trusted IPs for WeChat Work.Using special characters may cause sending failure.<br/>Example:<br/>http://username:password@127.0.0.1:1080<br/>socks5://username:password@127.0.0.1:1080');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/serverchan.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/serverchan3.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_mpnews.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/wxpusher.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/pushplus.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/wpush.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/telegram.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/diy.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/serverchan.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/serverchan3.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_mpnews.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/wxpusher.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/pushplus.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/wpush.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/telegram.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/diy.json');
 
 		o = s.taboption('basic', form.Button, '_test', _('Send Test'), _('You may need to save the configuration before sending.'));
 		o.inputstyle = 'add';
@@ -339,14 +339,14 @@ return view.extend({
 				return _this.map.reset();
 			});
 		}
-		o.depends('jsonpath', '/usr/share/wechatpush/api/serverchan.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/serverchan3.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/qywx_mpnews.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/wxpusher.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/pushplus.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/wpush.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/telegram.json');
-		o.depends('jsonpath', '/usr/share/wechatpush/api/diy.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/serverchan.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/serverchan3.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/qywx_mpnews.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/wxpusher.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/pushplus.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/wpush.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/telegram.json');
+		o.depends('jsonpath', '/usr/share/wechatpush-pro/api/diy.json');
 
 		o = s.taboption('basic', form.Value, 'device_name', _('Device Name'));
 		o.description = _('The device name will be displayed in the push message title to identify the source device of the message.');
@@ -371,7 +371,7 @@ return view.extend({
 		o.inputstyle = 'add';
 		o.onclick = function () {
 			var _this = this;
-			return fs.exec('/usr/libexec/wechatpush-call', ['down_oui']).then(function (res) {
+			return fs.exec('/usr/libexec/wechatpush-pro-call', ['down_oui']).then(function (res) {
 				if (res.code === 2) {
 					_this.description = _('Database is up to date, skipping update');
 				}
@@ -417,7 +417,7 @@ return view.extend({
 		o = s.taboption('basic', form.Flag, 'traffic_accumulate', _('Accumulate Total Traffic Across Days (OAF only)'));
 		o.default = '0';
 		o.depends('traffic_source', 'oaf');
-		o.description = _('When using OAF, let wechatpush keep a running total across days by detecting the midnight reset and adding each completed day to a baseline. Wrtbwmon and ctstat already accumulate by themselves, so this has no effect there. Turn OFF "Reset Traffic Data Every Day at Midnight" when enabling this.');
+		o.description = _('When using OAF, let wechatpush-pro keep a running total across days by detecting the midnight reset and adding each completed day to a baseline. Wrtbwmon and ctstat already accumulate by themselves, so this has no effect there. Turn OFF "Reset Traffic Data Every Day at Midnight" when enabling this.');
 
 		o = s.taboption('basic', form.Flag, 'reset_regularly', _('Reset Traffic Data Every Day at Midnight'));
 
@@ -431,14 +431,14 @@ return view.extend({
 		o.rows = 20;
 		o.wrap = 'oft';
 		o.cfgvalue = function (section_id) {
-			return fs.trimmed('/usr/share/wechatpush/api/device_aliases.list');
+			return fs.trimmed('/usr/share/wechatpush-pro/api/device_aliases.list');
 		};
 		o.write = function (section_id, formvalue) {
 			return this.cfgvalue(section_id).then(function (value) {
 				if (value == formvalue) {
 					return
 				}
-				return fs.write('/usr/share/wechatpush/api/device_aliases.list', formvalue.trim().replace(/\r\n/g, '\n') + '\n');
+				return fs.write('/usr/share/wechatpush-pro/api/device_aliases.list', formvalue.trim().replace(/\r\n/g, '\n') + '\n');
 			});
 		};
 		o.description = _('Please enter the device MAC and device alias separated by a space, such as:<br/> XX:XX:XX:XX:XX:XX My Phone<br/> 192.168.1.2 My PC<br />Please use the 「Save」 button in the text box.');
@@ -486,14 +486,14 @@ return view.extend({
 		o.rows = 8;
 		o.wrap = 'oft';
 		o.cfgvalue = function (section_id) {
-			return fs.trimmed('/usr/share/wechatpush/api/ipv4.list');
+			return fs.trimmed('/usr/share/wechatpush-pro/api/ipv4.list');
 		};
 		o.write = function (section_id, formvalue) {
 			return this.cfgvalue(section_id).then(function (value) {
 				if (value == formvalue) {
 					return
 				}
-				return fs.write('/usr/share/wechatpush/api/ipv4.list', formvalue.trim().replace(/\r\n/g, '\n') + '\n');
+				return fs.write('/usr/share/wechatpush-pro/api/ipv4.list', formvalue.trim().replace(/\r\n/g, '\n') + '\n');
 			});
 		};
 		o.description = _('Access a random address from the list above,URLs in the list are specific to Chinese websites. If you need to use this feature, please replace the URLs with the ones available to you.<br/>Please use the 「Save」 button in the text box.');
@@ -519,14 +519,14 @@ return view.extend({
 		o.rows = 8;
 		o.wrap = 'oft';
 		o.cfgvalue = function (section_id) {
-			return fs.trimmed('/usr/share/wechatpush/api/ipv6.list');
+			return fs.trimmed('/usr/share/wechatpush-pro/api/ipv6.list');
 		};
 		o.write = function (section_id, formvalue) {
 			return this.cfgvalue(section_id).then(function (value) {
 				if (value == formvalue) {
 					return
 				}
-				return fs.write('/usr/share/wechatpush/api/ipv6.list', formvalue.trim().replace(/\r\n/g, '\n') + '\n');
+				return fs.write('/usr/share/wechatpush-pro/api/ipv6.list', formvalue.trim().replace(/\r\n/g, '\n') + '\n');
 			});
 		};
 		o.description = _('Access a random address from the list above,URLs in the list are specific to Chinese websites. If you need to use this feature, please replace the URLs with the ones available to you.<br/>Please use the 「Save」 button in the text box.');
@@ -641,14 +641,14 @@ return view.extend({
 		o.rows = 8;
 		o.wrap = 'soft';
 		o.cfgvalue = function (section_id) {
-			return fs.trimmed('/usr/share/wechatpush/api/ip_blacklist');
+			return fs.trimmed('/usr/share/wechatpush-pro/api/ip_blacklist');
 		};
 		o.write = function (section_id, formvalue) {
 			return this.cfgvalue(section_id).then(function (value) {
 				if (value == formvalue) {
 					return
 				}
-				return fs.write('/usr/share/wechatpush/api/ip_blacklist', formvalue.trim().replace(/\r\n/g, '\n') + '\n');
+				return fs.write('/usr/share/wechatpush-pro/api/ip_blacklist', formvalue.trim().replace(/\r\n/g, '\n') + '\n');
 			});
 		};
 		o.depends('login_web_black', '1');

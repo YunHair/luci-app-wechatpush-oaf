@@ -41,7 +41,7 @@ return view.extend({
 			}, _('Collecting data ...'))
 		);
 
-		var log_path = '/tmp/wechatpush/wechatpush.log';
+		var log_path = '/tmp/wechatpush-pro/wechatpush-pro.log';
 		var lastLogContent = '';
 
 		var clear_log_button = E('div', {}, [
@@ -52,7 +52,7 @@ return view.extend({
 					var button = ev.target;
 					button.disabled = true;
 					button.textContent = _('Clear Logs...');
-					fs.exec_direct('/usr/libexec/wechatpush-call', ['clear_log'])
+					fs.exec_direct('/usr/libexec/wechatpush-pro-call', ['clear_log'])
 						.then(function () {
 							button.textContent = _('Logs cleared successfully!');
 							button.disabled = false;

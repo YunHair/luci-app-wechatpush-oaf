@@ -1,49 +1,49 @@
 {
-	"admin/services/wechatpush": {
+	"admin/services/wechatpush-pro": {
 		"title": "微信推送-pro",
 		"order": 30,
 		"action": {
 			"type": "view",
-			"path": "wechatpush/status"
+			"path": "wechatpush-pro/status"
 		},
 		"depends": {
 			"acl": [ "luci-app-wechatpush-pro" ],
-			"uci": { "wechatpush": true }
+			"uci": { "wechatpush-pro": true }
 		}
 	},
 
-	"admin/services/wechatpush/config": {
+	"admin/services/wechatpush-pro/config": {
 		"title": "Basic Settings",
 		"order": 10,
 		"action": {
 			"type": "view",
-			"path": "wechatpush/config"
+			"path": "wechatpush-pro/config"
 		}
 	},
 
-	"admin/services/wechatpush/advanced": {
+	"admin/services/wechatpush-pro/advanced": {
 		"title": "Advance Setting",
 		"order": 20,
 		"action": {
 			"type": "view",
-			"path": "wechatpush/advanced"
+			"path": "wechatpush-pro/advanced"
 		}
 	},
 
-	"admin/services/wechatpush/client": {
+	"admin/services/wechatpush-pro/client": {
 		"title": "Online Devices",
 		"order": 30,
 		"action": {
 			"type": "view",
-			"path": "wechatpush/client"
+			"path": "wechatpush-pro/client"
 		}
 	},
-	"admin/services/wechatpush/log": {
+	"admin/services/wechatpush-pro/log": {
 		"title": "Log",
 		"order": 40,
 		"action": {
 			"type": "view",
-			"path": "wechatpush/log"
+			"path": "wechatpush-pro/log"
 		}
 	}
 

@@ -2,7 +2,7 @@
 
 OpenWrt 路由器通知插件：把设备上下线、公网 IP 变化、运行状态、异常流量与安全事件推送到微信、企业微信、Telegram、邮件或自定义 API。
 
-本仓库是 [tty228/luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush) 的定制分支，包名、仓库名与 LuCI 菜单均已改为 **luci-app-wechatpush-pro**。默认流量来源为 **ctstat**，同时保留 wrtbwmon 与 OAF 两种来源。
+本仓库是 [tty228/luci-app-wechatpush-pro](https://github.com/tty228/luci-app-wechatpush-pro) 的定制分支，包名、仓库名与 LuCI 菜单均已改为 **luci-app-wechatpush-pro**。默认流量来源为 **ctstat**，同时保留 wrtbwmon 与 OAF 两种来源。
 
 ## 功能
 
@@ -29,28 +29,45 @@ Release 同时提供两种包格式：
 
 | 文件 | 适用系统 |
 | --- | --- |
-| `luci-app-wechatpush-pro_1.1-r2_all.ipk` | OpenWrt 19.07 – 24.10（opkg） |
-| `luci-app-wechatpush-pro-1.1-r2.apk` | OpenWrt 25.12+（apk） |
-| `luci-i18n-wechatpush-pro-zh-cn_1.1-r2_all.ipk` / `.apk` | 简体中文语言包 |
-| `luci-i18n-wechatpush-pro-zh-tw_1.1-r2_all.ipk` / `.apk` | 繁體中文語言包 |
+| `luci-app-wechatpush-pro_1.2-r1_all.ipk` | OpenWrt 19.07 – 24.10（opkg） |
+| `luci-app-wechatpush-pro-1.2-r1.apk` | OpenWrt 25.12+（apk） |
+| `luci-i18n-wechatpush-pro-zh-cn_1.2-r1_all.ipk` / `.apk` | 简体中文语言包 |
+| `luci-i18n-wechatpush-pro-zh-tw_1.2-r1_all.ipk` / `.apk` | 繁體中文語言包 |
 
 ```sh
 # opkg
 opkg update
-opkg install luci-app-wechatpush-pro_1.1-r2_all.ipk
-opkg install luci-i18n-wechatpush-pro-zh-cn_1.1-r2_all.ipk   # 简体（按需）
-opkg install luci-i18n-wechatpush-pro-zh-tw_1.1-r2_all.ipk   # 繁体（按需）
+opkg install luci-app-wechatpush-pro_1.2-r1_all.ipk
+opkg install luci-i18n-wechatpush-pro-zh-cn_1.2-r1_all.ipk   # 简体（按需）
+opkg install luci-i18n-wechatpush-pro-zh-tw_1.2-r1_all.ipk   # 繁体（按需）
 
 # apk
-apk add --allow-untrusted luci-app-wechatpush-pro-1.1-r2.apk
-apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.1-r2.apk  # 简体（按需）
-apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.1-r2.apk  # 繁体（按需）
+apk add --allow-untrusted luci-app-wechatpush-pro-1.2-r1.apk
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.2-r1.apk  # 简体（按需）
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.2-r1.apk  # 繁体（按需）
 ```
 
 基础依赖：`iputils-arping`、`curl`、`jq`、`bash`、`luci-lua-runtime`。
 编译期可选依赖：wrtbwmon（仅使用 wrtbwmon 流量源时需要）、lsblk / smartmontools（磁盘信息）、openssh-client / openssh-keygen（宿主机信息）。
 
 安装后在 LuCI 中进入 **服务 → 微信推送-pro**。
+
+### 从 1.1 及更早版本升级
+
+自 1.2-r1 起，程序内所有命名统一为 `wechatpush-pro`：启动项 `/etc/init.d/wechatpush-pro`、进程名 `wechatpush-pro`、配置 `/etc/config/wechatpush-pro`、目录 `/usr/share/wechatpush-pro/`、运行目录 `/tmp/wechatpush-pro/`。
+
+安装包会自动完成迁移，无需手工操作：
+
+- `/etc/config/wechatpush` → `/etc/config/wechatpush-pro`（原文件保留作备份）
+- 自定义 `diy.json`、`logo.jpg`、`ipv4.list`、`ipv6.list`、`device_aliases.list`、`ip_blacklist`、`usage_accum.db` 复制到新目录
+- 旧启动项自动 stop / disable 并删除，悬空的 `/etc/rc.d/` 链接一并清理
+- 重新注册开机自启；若升级前处于启用状态会立即启动
+
+若从 `luci-app-wechatpush-oaf` 那一代（包名不同）升级，仍需先卸载旧包：
+
+```sh
+opkg remove luci-app-wechatpush-oaf luci-i18n-wechatpush-oaf-zh-cn luci-i18n-wechatpush-oaf-zh-tw
+```
 
 ## 流量数据来源
 
@@ -100,17 +117,17 @@ apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.1-r2.apk  # 繁体（
 提交问题时请附上：
 
 - 设备型号、OpenWrt 版本、插件版本与所选流量来源
-- `/usr/share/wechatpush/wechatpush` 的直接输出
-- `/tmp/wechatpush/wechatpush.log` 与 `/tmp/wechatpush/usage.db`
-- `bash -x /usr/share/wechatpush/wechatpush t1` 的详细日志
+- `/usr/share/wechatpush-pro/wechatpush-pro` 的直接输出
+- `/tmp/wechatpush-pro/wechatpush-pro.log` 与 `/tmp/wechatpush-pro/usage.db`
+- `bash -x /usr/share/wechatpush-pro/wechatpush-pro t1` 的详细日志
 
 常见检查：
 
 ```sh
 ubus list | grep -E 'luci\.ctstat|fwx'
 ubus call luci.ctstat get_stats '{}' | jq '.devices | length'
-cat /tmp/wechatpush/usage.db
-/etc/init.d/wechatpush restart
+cat /tmp/wechatpush-pro/usage.db
+/etc/init.d/wechatpush-pro restart
 ```
 
 ## 许可

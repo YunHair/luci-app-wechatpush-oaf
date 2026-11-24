@@ -2,7 +2,7 @@
 
 An OpenWrt notification package that pushes client online/offline events, WAN IP changes, router status, abnormal traffic and security events to WeChat, WeCom, Telegram, email or a custom API.
 
-This repository is a customized fork of [tty228/luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush). The package name, repository name and LuCI menu entry are now **luci-app-wechatpush-pro**. The default traffic source is **ctstat**, with wrtbwmon and OAF still available.
+This repository is a customized fork of [tty228/luci-app-wechatpush-pro](https://github.com/tty228/luci-app-wechatpush-pro). The package name, repository name and LuCI menu entry are now **luci-app-wechatpush-pro**. The default traffic source is **ctstat**, with wrtbwmon and OAF still available.
 
 ## Features
 
@@ -29,28 +29,45 @@ Releases ship both package formats:
 
 | File | Target |
 | --- | --- |
-| `luci-app-wechatpush-pro_1.1-r2_all.ipk` | OpenWrt 19.07 – 24.10 (opkg) |
-| `luci-app-wechatpush-pro-1.1-r2.apk` | OpenWrt 25.12+ (apk) |
-| `luci-i18n-wechatpush-pro-zh-cn_1.1-r2_all.ipk` / `.apk` | Simplified Chinese translations |
-| `luci-i18n-wechatpush-pro-zh-tw_1.1-r2_all.ipk` / `.apk` | Traditional Chinese translations |
+| `luci-app-wechatpush-pro_1.2-r1_all.ipk` | OpenWrt 19.07 – 24.10 (opkg) |
+| `luci-app-wechatpush-pro-1.2-r1.apk` | OpenWrt 25.12+ (apk) |
+| `luci-i18n-wechatpush-pro-zh-cn_1.2-r1_all.ipk` / `.apk` | Simplified Chinese translations |
+| `luci-i18n-wechatpush-pro-zh-tw_1.2-r1_all.ipk` / `.apk` | Traditional Chinese translations |
 
 ```sh
 # opkg
 opkg update
-opkg install luci-app-wechatpush-pro_1.1-r2_all.ipk
-opkg install luci-i18n-wechatpush-pro-zh-cn_1.1-r2_all.ipk   # simplified, if needed
-opkg install luci-i18n-wechatpush-pro-zh-tw_1.1-r2_all.ipk   # traditional, if needed
+opkg install luci-app-wechatpush-pro_1.2-r1_all.ipk
+opkg install luci-i18n-wechatpush-pro-zh-cn_1.2-r1_all.ipk   # simplified, if needed
+opkg install luci-i18n-wechatpush-pro-zh-tw_1.2-r1_all.ipk   # traditional, if needed
 
 # apk
-apk add --allow-untrusted luci-app-wechatpush-pro-1.1-r2.apk
-apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.1-r2.apk  # simplified, if needed
-apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.1-r2.apk  # traditional, if needed
+apk add --allow-untrusted luci-app-wechatpush-pro-1.2-r1.apk
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.2-r1.apk  # simplified, if needed
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.2-r1.apk  # traditional, if needed
 ```
 
 Base dependencies: `iputils-arping`, `curl`, `jq`, `bash`, `luci-lua-runtime`.
 Optional build-time dependencies: wrtbwmon (only for the wrtbwmon traffic source), lsblk / smartmontools (disk information), openssh-client / openssh-keygen (host information).
 
 After installation, open **Services → WeChat Push-pro** in LuCI.
+
+### Upgrading from 1.1 or earlier
+
+Starting with 1.2-r1 every internal name is `wechatpush-pro`: init script `/etc/init.d/wechatpush-pro`, process name `wechatpush-pro`, config `/etc/config/wechatpush-pro`, data dir `/usr/share/wechatpush-pro/`, runtime dir `/tmp/wechatpush-pro/`.
+
+The package migrates automatically:
+
+- `/etc/config/wechatpush` → `/etc/config/wechatpush-pro` (old file kept as a backup)
+- custom `diy.json`, `logo.jpg`, `ipv4.list`, `ipv6.list`, `device_aliases.list`, `ip_blacklist`, `usage_accum.db` copied into the new directory
+- the old init script is stopped, disabled and removed; dangling `/etc/rc.d/` links are cleaned up
+- boot autostart is registered again, and the service is started immediately if it was enabled before
+
+When upgrading from the older `luci-app-wechatpush-oaf` package (different package name), remove it first:
+
+```sh
+opkg remove luci-app-wechatpush-oaf luci-i18n-wechatpush-oaf-zh-cn luci-i18n-wechatpush-oaf-zh-tw
+```
 
 ## Traffic data sources
 
@@ -100,17 +117,17 @@ Source-specific settings:
 Please include the following when reporting an issue:
 
 - Device model, OpenWrt version, package version and selected traffic source
-- Direct output of `/usr/share/wechatpush/wechatpush`
-- `/tmp/wechatpush/wechatpush.log` and `/tmp/wechatpush/usage.db`
-- Verbose logs from `bash -x /usr/share/wechatpush/wechatpush t1`
+- Direct output of `/usr/share/wechatpush-pro/wechatpush-pro`
+- `/tmp/wechatpush-pro/wechatpush-pro.log` and `/tmp/wechatpush-pro/usage.db`
+- Verbose logs from `bash -x /usr/share/wechatpush-pro/wechatpush-pro t1`
 
 Useful checks:
 
 ```sh
 ubus list | grep -E 'luci\.ctstat|fwx'
 ubus call luci.ctstat get_stats '{}' | jq '.devices | length'
-cat /tmp/wechatpush/usage.db
-/etc/init.d/wechatpush restart
+cat /tmp/wechatpush-pro/usage.db
+/etc/init.d/wechatpush-pro restart
 ```
 
 ## License
