@@ -29,22 +29,22 @@ Releases ship both package formats:
 
 | File | Target |
 | --- | --- |
-| `luci-app-wechatpush-pro_1.2-r1_all.ipk` | OpenWrt 19.07 – 24.10 (opkg) |
-| `luci-app-wechatpush-pro-1.2-r1.apk` | OpenWrt 25.12+ (apk) |
-| `luci-i18n-wechatpush-pro-zh-cn_1.2-r1_all.ipk` / `.apk` | Simplified Chinese translations |
-| `luci-i18n-wechatpush-pro-zh-tw_1.2-r1_all.ipk` / `.apk` | Traditional Chinese translations |
+| `luci-app-wechatpush-pro_1.2-r2_all.ipk` | OpenWrt 19.07 – 24.10 (opkg) |
+| `luci-app-wechatpush-pro-1.2-r2.apk` | OpenWrt 25.12+ (apk) |
+| `luci-i18n-wechatpush-pro-zh-cn_1.2-r2_all.ipk` / `.apk` | Simplified Chinese translations |
+| `luci-i18n-wechatpush-pro-zh-tw_1.2-r2_all.ipk` / `.apk` | Traditional Chinese translations |
 
 ```sh
 # opkg
 opkg update
-opkg install luci-app-wechatpush-pro_1.2-r1_all.ipk
-opkg install luci-i18n-wechatpush-pro-zh-cn_1.2-r1_all.ipk   # simplified, if needed
-opkg install luci-i18n-wechatpush-pro-zh-tw_1.2-r1_all.ipk   # traditional, if needed
+opkg install luci-app-wechatpush-pro_1.2-r2_all.ipk
+opkg install luci-i18n-wechatpush-pro-zh-cn_1.2-r2_all.ipk   # simplified, if needed
+opkg install luci-i18n-wechatpush-pro-zh-tw_1.2-r2_all.ipk   # traditional, if needed
 
 # apk
-apk add --allow-untrusted luci-app-wechatpush-pro-1.2-r1.apk
-apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.2-r1.apk  # simplified, if needed
-apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.2-r1.apk  # traditional, if needed
+apk add --allow-untrusted luci-app-wechatpush-pro-1.2-r2.apk
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.2-r2.apk  # simplified, if needed
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.2-r2.apk  # traditional, if needed
 ```
 
 Base dependencies: `iputils-arping`, `curl`, `jq`, `bash`, `luci-lua-runtime`.
@@ -52,22 +52,29 @@ Optional build-time dependencies: wrtbwmon (only for the wrtbwmon traffic source
 
 After installation, open **Services → WeChat Push-pro** in LuCI.
 
-### Upgrading from 1.1 or earlier
+### Upgrading from 1.1 or earlier (remove the old package first)
 
 Starting with 1.2-r1 every internal name is `wechatpush-pro`: init script `/etc/init.d/wechatpush-pro`, process name `wechatpush-pro`, config `/etc/config/wechatpush-pro`, data dir `/usr/share/wechatpush-pro/`, runtime dir `/tmp/wechatpush-pro/`.
 
-The package migrates automatically:
+**The package name changed (`luci-app-wechatpush` → `luci-app-wechatpush-pro`), so the package manager will not replace it, and this package does not migrate old settings. Treat it as a clean install:**
 
-- `/etc/config/wechatpush` → `/etc/config/wechatpush-pro` (old file kept as a backup)
-- custom `diy.json`, `logo.jpg`, `ipv4.list`, `ipv6.list`, `device_aliases.list`, `ip_blacklist`, `usage_accum.db` copied into the new directory
-- the old init script is stopped, disabled and removed; dangling `/etc/rc.d/` links are cleaned up
-- boot autostart is registered again, and the service is started immediately if it was enabled before
+```sh
+# opkg systems (OpenWrt 24.10 and older)
+opkg remove luci-app-wechatpush luci-i18n-wechatpush-zh-cn luci-i18n-wechatpush-zh-tw
 
-When upgrading from the older `luci-app-wechatpush-oaf` package (different package name), remove it first:
+# apk systems (OpenWrt 25.12 and newer)
+apk del luci-app-wechatpush luci-i18n-wechatpush-zh-cn luci-i18n-wechatpush-zh-tw
+```
+
+If you also had the older `luci-app-wechatpush-oaf`, remove it as well:
 
 ```sh
 opkg remove luci-app-wechatpush-oaf luci-i18n-wechatpush-oaf-zh-cn luci-i18n-wechatpush-oaf-zh-tw
 ```
+
+> **Old settings are not carried over.** `/etc/config/wechatpush` is a conffile and survives removal, but the new package never reads it; the old custom files (`diy.json`, `logo.jpg`, `ipv4.list`, `ipv6.list`, `device_aliases.list`, `ip_blacklist`, `usage_accum.db`) are not copied either. Re-enter what you need in the new UI, or back up `/usr/share/wechatpush/api/` before removing.
+>
+> After removal you may delete the leftovers (`/etc/config/wechatpush`, `/usr/share/wechatpush/`, `/etc/init.d/wechatpush`). Leaving them is harmless — the new package only uses the `*-pro` names and never collides with them.
 
 ## Traffic data sources
 

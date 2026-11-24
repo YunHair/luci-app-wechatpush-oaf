@@ -1,6 +1,6 @@
 {
 	"admin/services/wechatpush-pro": {
-		"title": "微信推送-pro",
+		"title": "WeChat push (Pro)",
 		"order": 30,
 		"action": {
 			"type": "view",

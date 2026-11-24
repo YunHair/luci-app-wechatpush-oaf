@@ -29,22 +29,22 @@ Release 同时提供两种包格式：
 
 | 文件 | 适用系统 |
 | --- | --- |
-| `luci-app-wechatpush-pro_1.2-r1_all.ipk` | OpenWrt 19.07 – 24.10（opkg） |
-| `luci-app-wechatpush-pro-1.2-r1.apk` | OpenWrt 25.12+（apk） |
-| `luci-i18n-wechatpush-pro-zh-cn_1.2-r1_all.ipk` / `.apk` | 简体中文语言包 |
-| `luci-i18n-wechatpush-pro-zh-tw_1.2-r1_all.ipk` / `.apk` | 繁體中文語言包 |
+| `luci-app-wechatpush-pro_1.2-r2_all.ipk` | OpenWrt 19.07 – 24.10（opkg） |
+| `luci-app-wechatpush-pro-1.2-r2.apk` | OpenWrt 25.12+（apk） |
+| `luci-i18n-wechatpush-pro-zh-cn_1.2-r2_all.ipk` / `.apk` | 简体中文语言包 |
+| `luci-i18n-wechatpush-pro-zh-tw_1.2-r2_all.ipk` / `.apk` | 繁體中文語言包 |
 
 ```sh
 # opkg
 opkg update
-opkg install luci-app-wechatpush-pro_1.2-r1_all.ipk
-opkg install luci-i18n-wechatpush-pro-zh-cn_1.2-r1_all.ipk   # 简体（按需）
-opkg install luci-i18n-wechatpush-pro-zh-tw_1.2-r1_all.ipk   # 繁体（按需）
+opkg install luci-app-wechatpush-pro_1.2-r2_all.ipk
+opkg install luci-i18n-wechatpush-pro-zh-cn_1.2-r2_all.ipk   # 简体（按需）
+opkg install luci-i18n-wechatpush-pro-zh-tw_1.2-r2_all.ipk   # 繁体（按需）
 
 # apk
-apk add --allow-untrusted luci-app-wechatpush-pro-1.2-r1.apk
-apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.2-r1.apk  # 简体（按需）
-apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.2-r1.apk  # 繁体（按需）
+apk add --allow-untrusted luci-app-wechatpush-pro-1.2-r2.apk
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-cn-1.2-r2.apk  # 简体（按需）
+apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.2-r2.apk  # 繁体（按需）
 ```
 
 基础依赖：`iputils-arping`、`curl`、`jq`、`bash`、`luci-lua-runtime`。
@@ -52,22 +52,29 @@ apk add --allow-untrusted luci-i18n-wechatpush-pro-zh-tw-1.2-r1.apk  # 繁体（
 
 安装后在 LuCI 中进入 **服务 → 微信推送-pro**。
 
-### 从 1.1 及更早版本升级
+### 从 1.1 及更早版本升级（需先卸载旧包）
 
 自 1.2-r1 起，程序内所有命名统一为 `wechatpush-pro`：启动项 `/etc/init.d/wechatpush-pro`、进程名 `wechatpush-pro`、配置 `/etc/config/wechatpush-pro`、目录 `/usr/share/wechatpush-pro/`、运行目录 `/tmp/wechatpush-pro/`。
 
-安装包会自动完成迁移，无需手工操作：
+**包名已改变（`luci-app-wechatpush` → `luci-app-wechatpush-pro`），包管理器不会自动替换，本包不做旧配置迁移，请按全新安装处理：**
 
-- `/etc/config/wechatpush` → `/etc/config/wechatpush-pro`（原文件保留作备份）
-- 自定义 `diy.json`、`logo.jpg`、`ipv4.list`、`ipv6.list`、`device_aliases.list`、`ip_blacklist`、`usage_accum.db` 复制到新目录
-- 旧启动项自动 stop / disable 并删除，悬空的 `/etc/rc.d/` 链接一并清理
-- 重新注册开机自启；若升级前处于启用状态会立即启动
+```sh
+# opkg 系统（OpenWrt 24.10 及更早）
+opkg remove luci-app-wechatpush luci-i18n-wechatpush-zh-cn luci-i18n-wechatpush-zh-tw
 
-若从 `luci-app-wechatpush-oaf` 那一代（包名不同）升级，仍需先卸载旧包：
+# apk 系统（OpenWrt 25.12 及更新）
+apk del luci-app-wechatpush luci-i18n-wechatpush-zh-cn luci-i18n-wechatpush-zh-tw
+```
+
+若还装过更早的 `luci-app-wechatpush-oaf`，一并卸载：
 
 ```sh
 opkg remove luci-app-wechatpush-oaf luci-i18n-wechatpush-oaf-zh-cn luci-i18n-wechatpush-oaf-zh-tw
 ```
+
+> **旧配置不会自动带过来**。卸载旧包时 `/etc/config/wechatpush` 属 conffile 会被保留，仅作备份，新包不会读取它；旧的自定义文件（`diy.json`、`logo.jpg`、`ipv4.list`、`ipv6.list`、`device_aliases.list`、`ip_blacklist`、`usage_accum.db`）也不会自动复制。如需延续，请在新版页面里重新填写，或卸载前手工备份 `/usr/share/wechatpush/api/`。
+>
+> 卸载后 `/etc/config/wechatpush`、`/usr/share/wechatpush/`、`/etc/init.d/wechatpush` 等残留可直接删除；不删也不影响新包运行（新包只使用 `*-pro` 命名，不会与旧文件冲突）。
 
 ## 流量数据来源
 

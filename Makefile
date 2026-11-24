@@ -2,11 +2,16 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-wechatpush-pro
 # pro 分支：包名与 LuCI 应用名统一为 luci-app-wechatpush-pro。
-# apk (OpenWrt 25.12+) 的版本号只接受 数字[.数字]*[-r数字]，故实际包版本为 1.2-r1。
+# apk (OpenWrt 25.12+) 的版本号只接受 数字[.数字]*[-r数字]，故实际包版本为 1.2-r2。
 PKG_VERSION:=1.2
-PKG_RELEASE:=1
+PKG_RELEASE:=2
+# 翻译包沿用应用版本号；不设置时 luci.mk 会退化成日期版本（如 0.261124.27507），
+# 与 README 中 luci-i18n-wechatpush-pro-zh-cn_1.2-r2_all.ipk 的命名不一致。
+PKG_PO_VERSION:=$(PKG_VERSION)-r$(PKG_RELEASE)
 
 PKG_MAINTAINER:=tty228 <tty228@yeah.net>
+PKG_LICENSE:=GPL-2.0-or-later
+PKG_LICENSE_FILES:=LICENSE
 PKG_CONFIG_DEPENDS:= \
         CONFIG_PACKAGE_$(PKG_NAME)_Enable_Traffic_Monitoring \
         CONFIG_PACKAGE_$(PKG_NAME)_Enable_OAF_Traffic \
@@ -43,7 +48,7 @@ config PACKAGE_$(PKG_NAME)_Enable_OAF_Traffic
                 automatically (that package lives in the oaf feed and may not exist in all trees).
         depends on PACKAGE_$(PKG_NAME)
         default n
-config PACKAGE_$(PKG_NAME)_Local_Disk_Information_Detection
+config PACKAGE_$(PKG_NAME)_Enable_Local_Disk_Information_Detection
         bool "Local Disk Information Detection"
         help
                 If the lsblk package is not installed, the total disk capacity information might be inconsistent with actual values. When smartctl is not installed, information about disk temperature, power-on time, health status, and more will be unavailable. If you are using a virtual machine or have not installed a physical disk, this feature is typically unnecessary.
@@ -52,7 +57,7 @@ config PACKAGE_$(PKG_NAME)_Local_Disk_Information_Detection
         select PACKAGE_smartmontools-drivedb
         depends on PACKAGE_$(PKG_NAME)
         default n
-config PACKAGE_$(PKG_NAME)_Host_Information_Detection
+config PACKAGE_$(PKG_NAME)_Enable_Host_Information_Detection
         bool "Host Information Detection"
         help
                 When using a virtual machine and requiring information about the host machine's temperature and disk details, you need to install openssh-client and openssh-keygen for SSH connections.
@@ -70,6 +75,11 @@ define Package/$(PKG_NAME)/conffiles
 /usr/share/wechatpush-pro/api/ipv6.list
 /usr/share/wechatpush-pro/api/device_aliases.list
 endef
+
+# 不提供旧配置迁移：包名已由 luci-app-wechatpush 改为 luci-app-wechatpush-pro，
+# 两者在包管理器看来是不同的包，升级前请先卸载旧包，本包按全新安装处理。
+# 安装后的初始化（注册自启、清 LuCI 缓存）放在 root/etc/uci-defaults/luci-wechatpush-pro，
+# 由 default_postinst 在安装时立即执行，opkg 与 apk 走同一条路径。
 
 include $(TOPDIR)/feeds/luci/luci.mk
 

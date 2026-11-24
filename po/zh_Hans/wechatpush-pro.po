@@ -9,8 +9,8 @@ msgstr ""
 "X-Generator: Weblate 4.18-dev\n"
 
 #: applications/luci-app-wechatpush-pro/root/usr/share/luci/menu.d/luci-app-wechatpush-pro.json:3
-msgid "WeChat push"
-msgstr "微信推送"
+msgid "WeChat push (Pro)"
+msgstr "微信推送-pro"
 
 #: applications/luci-app-wechatpush-pro/root/usr/share/luci/menu.d/luci-app-wechatpush-pro.json:15
 msgid "Basic Settings"
@@ -859,10 +859,6 @@ msgstr "关注设备列表"
 msgid "AA:AA:AA:AA:AA:AA\\|BB:BB:BB:BB:BB:BB Multiple MAC addresses can be treated as the same user.<br/>Notifications will not be sent once any device is online, and notifications will only be sent when all devices are offline to avoid frequent notifications in dual Wi-Fi scenarios."
 msgstr "AA:AA:AA:AA:AA:AA\\|BB:BB:BB:BB:BB:BB 可以将多个 MAC 视为同一用户<br/>任一设备在线后不再推送，设备全部离线时才会推送，避免双 wifi 频繁推送"
 
-#: applications/luci-app-wechatpush-pro/htdocs/luci-static/resources/view/wechatpush-pro/config.js:644
-msgid "Notify only devices using this interface"
-msgstr "仅通知此接口设备"
-
 #: applications/luci-app-wechatpush-pro/htdocs/luci-static/resources/view/wechatpush-pro/config.js:649
 msgid "MAC Filtering Mode 2"
 msgstr "MAC 过滤模式二"
@@ -1148,10 +1144,6 @@ msgstr "ROS 路由器 IP 地址"
 msgid "MikroTik Router Account"
 msgstr "ROS 路由器用户名"
 
-#: applications/luci-app-wechatpush-pro/htdocs/luci-static/resources/view/wechatpush-pro/advanced.js:216
-msgid "The main router address is all that is needed in the Mesh wireless network topology."
-msgstr "Mesh 无线网络拓扑中，只需要填写主路由地址"
-
 #: applications/luci-app-wechatpush-pro/htdocs/luci-static/resources/view/wechatpush-pro/advanced.js:135
 msgid "IP range to be scanned"
 msgstr "需要扫描的 IP 段"
@@ -1294,9 +1286,6 @@ msgstr "已连通！"
 msgid "Disconnected!"
 msgstr "已断开！"
 
-msgid "System running status"
-msgstr "系统运行状态"
-
 msgid "Average load:"
 msgstr "平均负载："
 
@@ -1308,9 +1297,6 @@ msgstr "内存占用："
 
 msgid "Global connection:"
 msgstr "全球互联："
-
-msgid "Device temperature"
-msgstr "设备温度"
 
 msgid "CPU:"
 msgstr "CPU："
@@ -1429,11 +1415,11 @@ msgstr "推送内容预览文件保存至：%s"
 msgid "If no message received, please check %s or use the following command to test manually"
 msgstr "如果收不到信息，请检查 %s 文件，或使用下列命令手动测试返回值"
 
-msgid "Total Traffic:"
-msgstr "总计流量："
-
 msgid "%s abnormal traffic"
 msgstr "%s 流量异常"
+
+msgid "abnormal traffic"
+msgstr "流量异常"
 
 msgid "Device abnormal traffic"
 msgstr "设备流量异常"
@@ -1476,9 +1462,6 @@ msgstr "%s 连接了你的路由器"
 
 msgid "New device connected"
 msgstr "新设备连接"
-
-msgid "Device status changed"
-msgstr "设备状态变化"
 
 msgid "Network Interface:"
 msgstr "网络接口："
@@ -1704,9 +1687,6 @@ msgstr "MAC 信息文件无需更新"
 
 msgid "Location query timeout, current API: %s"
 msgstr "归属地获取超时，当前使用的 API 为 %s"
-
-msgid "Currently %d online devices, details below"
-msgstr "现有在线设备 %d 台，具体如下"
 
 msgid "Rebooting router..."
 msgstr "重启路由器咯"
