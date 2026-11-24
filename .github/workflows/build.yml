@@ -137,18 +137,19 @@ jobs:
           find ./bin/packages -type f -name "luci-i18n-${translation_pkg}-*.apk" -delete
           {
             echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
-            # 注意：流量监控功能在 OpenWrt 22+ 中不可用（wrtbwmon 与 firewall4 不兼容）
-            # echo "CONFIG_PACKAGE_${PACKAGE_NAME}_Enable_Traffic_Monitoring=y"
-            echo "CONFIG_PACKAGE_${PACKAGE_NAME}_Enable_Local_Disk_Information_Detection=y"
-            echo "CONFIG_PACKAGE_${PACKAGE_NAME}_Enable_Host_Information_Detection=y"
-            # echo "CONFIG_PACKAGE_wrtbwmon=m"  # 在 firewall4 环境下不兼容
-            echo "CONFIG_PACKAGE_lsblk=m"
-            echo "CONFIG_PACKAGE_smartmontools=m"
-            echo "CONFIG_PACKAGE_smartmontools-drivedb=m"
-            echo "CONFIG_PACKAGE_openssh-client=m"
-            echo "CONFIG_PACKAGE_openssh-keygen=m"
+            # 本包是 noarch（纯 shell + JS + JSON），编译自身不需要任何 C 依赖。
+            # Enable_* 选项只是"安装时让 opkg 拉哪些可选依赖"的 Kconfig 标记，
+            # 在 CI 里打开会把 lsblk / smartmontools / openssh 的整条依赖树
+            # 拉进来预编（含 host libunistring，在 runner 的 GCC 15 下编不过），
+            # 而 Release 也不需要这些包——用户装插件时由 opkg 从源里解析即可。
+            # 故这里保持 =n，只编主程序与翻译包。
+            echo "CONFIG_PACKAGE_${PACKAGE_NAME}_Enable_Traffic_Monitoring=n"
+            echo "CONFIG_PACKAGE_${PACKAGE_NAME}_Enable_Local_Disk_Information_Detection=n"
+            echo "CONFIG_PACKAGE_${PACKAGE_NAME}_Enable_Host_Information_Detection=n"
             echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
+            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-tw=m"
             echo "CONFIG_LUCI_LANG_zh_Hans=y"
+            echo "CONFIG_LUCI_LANG_zh_Hant=y"
           } > .config
           make defconfig
 
@@ -273,7 +274,9 @@ jobs:
           {
             echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
             echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
+            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-tw=m"
             echo "CONFIG_LUCI_LANG_zh_Hans=y"
+            echo "CONFIG_LUCI_LANG_zh_Hant=y"
           } > .config
           make defconfig
 
