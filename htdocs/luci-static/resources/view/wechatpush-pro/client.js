@@ -335,13 +335,10 @@ return view.extend({
 				.device-table td[data-column="parent"] {
 					display: none;
 				}
-				/* 有图标时只显示图标；有线设备（LAN）没有图标，保留文字，避免整格空白 */
-				.device-table td[data-column="interface"].has-icon span:not(.iface-icon) {
-					display: none;
-				}
-				/* 调整图标样式 */
-				.device-table td[data-column="interface"] .iface-icon {
-					margin-right: 0; /* 去掉图标右侧的间距 */
+				/* 接口列只输出文字（2.4G / 5G / LAN），不再放 emoji 图标，
+				   窄屏也不隐藏，避免字体缺字或缺图标时整格空白 */
+				.device-table td[data-column="interface"] {
+					white-space: nowrap;
 				}
 			}
 		`;
@@ -398,29 +395,11 @@ return view.extend({
 							nameSpan.textContent = device['name'] || '';
 							cell.appendChild(nameSpan);
 						} else if (columns[i] === 'interface') {
-							var ifaceIcon = '';
-							if (device['interface'] === '2.4G') {
-								ifaceIcon = '📶';
-							} else if (device['interface'] === '5G') {
-								ifaceIcon = '🛜';
-							} else if (device['interface'] === 'WiFi') {
-								ifaceIcon = '🛜';
-							}
-
-							// 只有无线频段才有图标；有线（LAN 等）不加空图标，
-							// 否则手机端隐藏文字后就只剩一片空白
-							if (ifaceIcon) {
-								var icon = document.createElement('span');
-								icon.classList.add('iface-icon');
-								icon.textContent = ifaceIcon;
-								cell.appendChild(icon);
-								cell.classList.add('has-icon');
-							}
-
-							var text = document.createElement('span');
-							text.textContent = device['interface'];
-
-							cell.appendChild(text);
+							// 只输出文字，不用 emoji 图标。原来的图标有两处隐患：
+							// 1) 有线设备（LAN）拿不到图标，窄屏又把文字隐藏了，整格变成空白；
+							// 2) 🛜 是 Unicode 15 才有的字符，旧安卓/精简字体缺字会显示豆腐块。
+							// 文字本身（2.4G / 5G / LAN）已经能说明问题，不再依赖字体。
+							cell.textContent = device['interface'];
 						} else if (columns[i] === 'traffic_in' || columns[i] === 'traffic_out' || columns[i] === 'traffic_total') {
 							var trafficBytes = parseInt(device[columns[i]], 10) || 0;
 							cell.textContent = formatTraffic(trafficBytes);
