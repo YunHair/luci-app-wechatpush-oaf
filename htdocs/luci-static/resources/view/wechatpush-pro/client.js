@@ -335,8 +335,8 @@ return view.extend({
 				.device-table td[data-column="parent"] {
 					display: none;
 				}
-				/* 隐藏接口列的文本部分 */
-				.device-table td[data-column="interface"] span:not(.iface-icon) {
+				/* 有图标时只显示图标；有线设备（LAN）没有图标，保留文字，避免整格空白 */
+				.device-table td[data-column="interface"].has-icon span:not(.iface-icon) {
 					display: none;
 				}
 				/* 调整图标样式 */
@@ -398,20 +398,28 @@ return view.extend({
 							nameSpan.textContent = device['name'] || '';
 							cell.appendChild(nameSpan);
 						} else if (columns[i] === 'interface') {
-							var icon = document.createElement('span');
-							icon.classList.add('iface-icon');
+							var ifaceIcon = '';
 							if (device['interface'] === '2.4G') {
-								icon.innerHTML = '📶';
+								ifaceIcon = '📶';
 							} else if (device['interface'] === '5G') {
-								icon.innerHTML = '🛜';
+								ifaceIcon = '🛜';
 							} else if (device['interface'] === 'WiFi') {
-								icon.innerHTML = '🛜';
+								ifaceIcon = '🛜';
+							}
+
+							// 只有无线频段才有图标；有线（LAN 等）不加空图标，
+							// 否则手机端隐藏文字后就只剩一片空白
+							if (ifaceIcon) {
+								var icon = document.createElement('span');
+								icon.classList.add('iface-icon');
+								icon.textContent = ifaceIcon;
+								cell.appendChild(icon);
+								cell.classList.add('has-icon');
 							}
 
 							var text = document.createElement('span');
 							text.textContent = device['interface'];
 
-							cell.appendChild(icon);
 							cell.appendChild(text);
 						} else if (columns[i] === 'traffic_in' || columns[i] === 'traffic_out' || columns[i] === 'traffic_total') {
 							var trafficBytes = parseInt(device[columns[i]], 10) || 0;
